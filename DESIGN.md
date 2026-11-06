@@ -15,9 +15,9 @@
 
 ### Chosen direction — Premium Hybrid
 Minimalist product precision plus restrained cinematic scene changes.
-- First frame: headline dominant on left, reflective interlocking ring sculpture on right. No card grids or gradient blobs.
-- Signature transition: moving from warm paper to deep-black filmic space as the viewer scrolls; the same sculpture is reframed, tilted and lit differently, with continuity of message and form.
-- Editorial sections use dramatic type scale and few very deliberate layout variations.
+- First frame (revised 2026-11-06, "The Director's Frame"): a viewfinder on warm paper. The headline is one sentence set in two widths of one family: "THE WEB DESERVES" wide and light, "DIRECTION." condensed and black across the frame. The interlocked ring sculpture is threaded through the word and centred on its full stop: the red full stop is the sculpture's core. The ring passes behind "ON" and in front of the "O". No left/right split, no card grids, no gradient blobs.
+- Signature transition ("lights down, letterbox in"): one pinned stage. The type tilts out upward faster than the object (depth), the paper dims to cinema, matte bars close to a ~2.39:1 frame, and the same sculpture, now rim-lit, settles behind "THE TEMPLATE." with a subtitle in the lower bar. Same object, new light.
+- Editorial chapters (extended 2026-11-06 after approval) repeat one system: each title is one sentence in two widths (wide light first half, condensed black monument with the red full stop), no section numbers, no eyebrow labels. Philosophy: monument + offset lede. Craft: three discipline rows set as condensed monuments, no fake link arrows. Standard: the 11 real gate names from the skill as a catalogue index, G11 set as a monument. Install: the cinema world returns as a closing frame (matte top bar, frame marks, the rim-lit sculpture's third and last appearance behind "MATTER."); the footer sits in a matte band like end credits.
 - Reduced-motion visitors get a complete static composition without any loss of content.
 
 ### Alternative directions considered
@@ -25,15 +25,20 @@ Minimalist product precision plus restrained cinematic scene changes.
 2. Fully spatial WebGL narrative: visually ambitious but potentially unnecessary complexity and device cost.
 3. **Chosen:** cinematic 2D/SVG art direction with clear motion budget.
 
+Prototype iteration (2026-11-06) compared three first-frame directions:
+- A. Catalogue plate: a single object photographed on a gallery plate, lights fade out on scroll. Strong mood, but keeps the "headline left, object right" scaffold the audit flagged as generic.
+- B. **Chosen — The Director's Frame:** viewfinder composition, type and object fused, transition by letterboxing. The motion has a cause (framing is what a director does) and needs only CSS.
+- C. Typographic monolith: zoom through the counter of the "O" into the dark chapter. Spectacular but a known trope, and scaling huge text is costly and hurts legibility mid-transition.
+
 ### Antipatterns
 No animated particle fields, arbitrary glassmorphism, glowing purple or blue gradients, identical feature cards, auto-playing high-bitrate video, hidden navigation, fake results, invented statistics, award claims, or 3D just to show off.
 
 ## User journey
 | Section | Visitor question | Treatment | CTA |
 | --- | --- | --- | --- |
-| Opening | Is this different? | Monolithic typography + original sculpture | Scroll |
+| Opening | Is this different? | Director's frame: monument word threaded through the sculpture | Install / Enter the scene |
+| Experience | Can it feel cinematic? | Pinned scene: lights down, letterbox, rim-lit sculpture | Continue |
 | Philosophy | What is the approach? | Editorial typography | Continue |
-| Experience | Can it feel cinematic? | Dark scene shift, transformed sculpture | Continue |
 | Craft | What does the skill actually do? | Three typographic rows | Continue |
 | Standard | Can I trust the process? | Named quality gates without fabricated scores | Read gates |
 | Install | Can I use it? | Command with copy button | GitHub |
@@ -48,9 +53,9 @@ No animated particle fields, arbitrary glassmorphism, glowing purple or blue gra
 - Separator: `rgba(23,24,23,.2)`.
 
 ### Typography
-- Headlines: Space Grotesk, 700, tightly tracked. Display scales responsive via `clamp`.
-- Body: DM Sans 400–700. System fallbacks.
-- Labels: uppercase, compact, letter-spaced, not relied on to convey essential meaning.
+- Display: Archivo variable (wght 100–900, wdth 62–125), self-hosted via `next/font`. Monument: 900 / wdth 62 / -0.035em. Kicker: 300 / wdth 125 / +0.01em. Later chapters: 800 at normal width. Tracking floor -0.04em (the earlier -0.09em made letters collide).
+- Body: DM Sans variable via `next/font`. System fallbacks.
+- Labels: only the opening running head ("The Art of Direction / Open-source agent skill"); uppercase, compact, letter-spaced, never essential meaning.
 - Font licensing: Google Fonts (OFL); production optimization should move to `next/font` or self-hosted permitted formats if necessary.
 - Never use all-caps micro-labels for long instructions.
 
@@ -70,15 +75,14 @@ No animated particle fields, arbitrary glassmorphism, glowing purple or blue gra
 ## Components and states
 - Header: compact wordmark, jump links, mobile menu; visible focus and expanded semantics.
 - Signature ring: adaptive CSS/SVG artwork; no heavy canvas.
-- Reveal: IntersectionObserver progressive enhancement; must remain readable without JavaScript or reduced motion.
-- Installation command: accessible copy affordance, success feedback; command always selectable.
+- Installation command: copy button with visible and announced (`role="status"`) feedback. On clipboard failure the command is auto-selected and the button reads "Command selected"; the command is always selectable.
 - Links: visible hover/focus. External links use `rel="noopener noreferrer"`.
 - States: mobile menu open/closed; copy success or graceful failure; missing clipboard permissions do not remove command.
 
 ## Motion direction
 - Motion thesis: **form follows intention**. The object drifts almost imperceptibly; visual storytelling comes mainly from page composition and changing surface.
-- Motifs: slow levitation, editorial text reveals, stark scene cut.
-- Default drift ~9s, editorial reveal ~0.8s; transitions should never prevent interaction.
+- Motifs: camera tilt (type leaves faster than the object), lights down, letterbox. No per-section entrance animations.
+- The scroll scene is the one authored motion: CSS scroll-driven animations (`view-timeline`), composited properties only, no JS. Without `animation-timeline` support or with reduced motion the scene renders as two static chapters. The former 9s ambient drift was removed (one authored moment; avoids a WCAG 2.2.2 pause requirement). The per-heading IntersectionObserver reveal was removed for the same reason, which also drops its client JS.
 - No forced smooth-scroll library.
 - `prefers-reduced-motion: reduce` disables all decorative animation and smooth scroll.
 - Non-WebGL environment is the default supported experience.
@@ -115,6 +119,6 @@ All results below are **NOT RUN** until a browser and build run actually produce
 - Prototype slice: first viewport plus beginning of philosophy/cinema transition.
 - Baseline: new site, no existing before screenshot. Document conceptual reference rather than fabricate matched before/after.
 - Expected observable difference: paper gallery opening versus cinema chapter with motif continuity.
-- Browser evidence: **NOT RUN**.
-- G11: **NOT RUN** until inspected in real browsers.
+- Browser evidence: captured 2026-11-06 with headless Edge via CDP (local `artifacts/before`, `artifacts/after`, not committed).
+- G11: PASS (internal, qualitative) for the first viewport and transition at 375/768/1440/1920; direction approved by the user on 2026-11-06 and extended to all chapters.
 - Before scaling: visually review mobile/desktop and failure modes. Correct composition rather than simply adding effects.
