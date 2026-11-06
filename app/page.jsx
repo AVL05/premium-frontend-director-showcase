@@ -50,11 +50,12 @@ function Reveal({ children, className = '' }) {
   useEffect(() => {
     const el = ref.current;
     if (!el || !('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    el.classList.add('will-reveal');
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } });
     }, { threshold: 0.12 });
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); el.classList.remove('will-reveal'); };
   }, []);
   return <div ref={ref} className={'reveal is-visible-fallback ' + className}>{children}</div>;
 }
