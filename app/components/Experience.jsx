@@ -22,7 +22,8 @@ const SHOTS = {
   process: () => (wide() ? { x: .73, y: .47, size: .6 } : { x: .5, y: .26, size: .36 }),
   // Macro: the object enormous and cropped by the frame edge, the session floating in front of it.
   session: () => (wide() ? { x: .97, y: .52, size: 1.3 } : { x: .92, y: .2, size: .5 }),
-  standard: () => (wide() ? { x: .19, y: .76, size: .38 } : { x: .8, y: .17, size: .24 }),
+  // The blueprint sits behind the slate's gate number, like a lens over it.
+  standard: () => (wide() ? { x: .2, y: .6, size: .44 } : { x: .8, y: .17, size: .24 }),
 };
 
 // Object forms for each take of the workflow. Every key is set so any form can follow any other.
@@ -202,12 +203,33 @@ async function direct({ canvas, frontCanvas, state }) {
         scrollTrigger: scrub('.process', { start: 'top bottom', end: 'top top' }) });
 
     // Monument headings outside the scene enter by masked characters.
+    // Each chapter title enters its own way, so the shared two-width sentence never repeats a gesture:
+    //  rise (Process, Install: the opening's gesture, bookending the film), morph (Craft: the width
+    //  axis travels from wide light to condensed black), type (Session), wipe (Standard: a scanner).
+    const ENTRANCES = { craft: 'morph', session: 'type', standard: 'wipe' };
     gsap.utils.toArray('#content .chapter-title').forEach(title => {
-      const chars = split(title.querySelector('.t-text'), { type: 'chars', mask: 'chars' }).chars;
+      const kind = ENTRANCES[title.closest('section')?.id] || 'rise';
+      const text = title.querySelector('.t-text'), word = title.querySelector('.t-word');
       const words = split(title.querySelector('.t-kicker'), { type: 'words', mask: 'words' }).words;
-      gsap.timeline({ scrollTrigger: { trigger: title, start: 'top 82%', once: true } })
-        .from(words, { yPercent: 105, duration: 1, stagger: .05, ease: 'expo.out' }, 0)
-        .from(chars, { yPercent: 112, duration: 1.2, stagger: .03, ease: 'expo.out' }, .08);
+      const tl = gsap.timeline({ scrollTrigger: { trigger: title, start: kind === 'morph' ? 'top 96%' : 'top 82%', once: true } })
+        .from(words, { yPercent: 105, duration: 1, stagger: .05, ease: 'expo.out' }, 0);
+      if (kind === 'morph') {
+        // Not rendered before it starts: the Craft anchor is measured on the final, condensed word.
+        tl.fromTo(text, { fontVariationSettings: "'wdth' 125", fontWeight: 300, letterSpacing: '.02em' },
+          { fontVariationSettings: "'wdth' 62", fontWeight: 900, letterSpacing: '-.035em', duration: 1.9, ease: 'expo.out', immediateRender: false, clearProps: 'fontVariationSettings,fontWeight,letterSpacing' }, .05);
+      } else if (kind === 'type') {
+        tl.from(split(text, { type: 'chars' }).chars, { autoAlpha: 0, duration: .01, stagger: .055, ease: 'none' }, .2);
+      } else if (kind === 'wipe') {
+        tl.fromTo(word, { '--wipe': 0, '--bar': 1 }, { '--wipe': 100, duration: 1.3, ease: 'power3.inOut' }, .1)
+          .to(word, { '--bar': 0, duration: .35 }, '>-.1');
+      } else {
+        tl.from(split(text, { type: 'chars', mask: 'chars' }).chars, { yPercent: 112, duration: 1.2, stagger: .03, ease: 'expo.out' }, .08);
+      }
+    });
+
+    // Disciplines: each drawing is drawn in by scroll.
+    gsap.utils.toArray('.discipline-art').forEach(art => {
+      gsap.fromTo(art, { '--p': 0 }, { '--p': 1, ease: 'none', scrollTrigger: scrub(art.closest('li'), { start: 'top 88%', end: 'center 50%' }) });
     });
 
     const mm = gsap.matchMedia();
@@ -266,26 +288,19 @@ async function direct({ canvas, frontCanvas, state }) {
       });
     });
 
-    // ======== 4b. Process, narrow: each take sets the object's form as it arrives ========
+    // ======== 4b. Process, narrow: each take scrubs the object from the previous form to its own ========
+    // Scroll-driven like the desktop take (not time-based), so a fast scroll can never leave a late
+    // tween writing a form after the visitor has moved on.
     mm.add('(max-width: 899px)', () => {
-      let current = null;
-      const go = form => {
-        current?.kill();
-        const io = { ease: 'power2.inOut' };
-        current = form === 'Direct'
-          ? gsap.timeline()
-            .to(state, { ...FORMS.Discover, scatter: 0, duration: 1.1, ...io })
-            .to(state, { choose: 1, duration: .6, ...io })
-            .to(state, { ghost: 0, duration: .8, ease: 'power3.inOut' })
-          : gsap.to(state, { ...FORMS[form], duration: 1.4, ...io });
-      };
-      cleanups.push(() => current?.kill());
+      const off = { immediateRender: false };
       gsap.utils.toArray('.take:not(.take--head)').forEach((take, i) => {
-        ScrollTrigger.create({
-          trigger: take, start: 'top 55%', end: 'bottom 55%',
-          onEnter: () => go(TAKES[i]), onEnterBack: () => go(TAKES[i]),
-          onLeaveBack: () => { if (i === 0) go('head'); },
-        });
+        const from = i === 0 ? FORMS.head : FORMS[TAKES[i - 1]];
+        const tl = gsap.timeline({ defaults: { ease: 'power1.inOut' }, scrollTrigger: scrub(take, { start: 'top 85%', end: 'top 30%' }) });
+        if (TAKES[i] === 'Direct') {
+          tl.fromTo(state, from, { ...FORMS.Discover, scatter: 0, duration: .5, ...off })
+            .fromTo(state, { choose: 0 }, { choose: 1, duration: .25, ...off })
+            .fromTo(state, { ghost: 1 }, { ghost: 0, duration: .25, ...off });
+        } else tl.fromTo(state, from, { ...FORMS[TAKES[i]], ...off });
         gsap.from(take.children, { autoAlpha: 0, y: 30, duration: 1, stagger: .08, ease: 'expo.out', scrollTrigger: { trigger: take, start: 'top 70%', once: true } });
       });
     });
@@ -343,11 +358,44 @@ async function direct({ canvas, frontCanvas, state }) {
 
     // ======== 8. Standard: the object becomes its own blueprint ========
     gsap.fromTo(state, { ...at('session'), solid: 1, wire: 0 }, {
-      ...at('standard'), solid: 0, wire: 1, ease: 'power2.inOut', immediateRender: false,
+      ...at('standard'), solid: 0, wire: .55, ease: 'power2.inOut', immediateRender: false,
       scrollTrigger: scrub('#standard', { start: 'top bottom', end: 'top 20%' }),
     });
     gsap.from('.gate:not(.gate--key)', { autoAlpha: 0, y: 18, duration: .8, stagger: .06, ease: 'expo.out', scrollTrigger: { trigger: '.gates', start: 'top 80%', once: true } });
     gsap.from('.gate--key', { autoAlpha: 0, y: 40, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: '.gate--key', start: 'top 88%', once: true } });
+
+    // ======== 8b. The slate (desktop): the list pins and each gate takes the slate in turn ========
+    // The blueprint turns as it inspects them. The list keeps the real content; the slate is a copy.
+    mm.add('(min-width: 900px)', () => {
+      const ol = document.querySelector('.gates');
+      const items = gsap.utils.toArray('.gate');
+      const slate = document.querySelector('.slate');
+      if (!ol || !slate || !items.length) return;
+      const q = sel => slate.querySelector(sel);
+      const parts = [q('.slate-id'), q('.slate-name'), q('.slate-evidence')];
+      let active = -1;
+      const show = i => {
+        if (i === active) return;
+        const dir = i > active ? 1 : -1;
+        active = i;
+        const li = items[i];
+        items.forEach((el, k) => el.classList.toggle('is-active', k === i));
+        q('.slate-n').textContent = String(i + 1).padStart(2, '0');
+        parts[0].textContent = li.querySelector('.gate-id').textContent;
+        parts[1].textContent = li.querySelector('.gate-title').textContent;
+        parts[2].textContent = li.querySelector('.gate-note').textContent;
+        slate.classList.toggle('slate--key', li.classList.contains('gate--key'));
+        ol.style.setProperty('--scan-x', li.offsetLeft + 'px');
+        ol.style.setProperty('--scan-y', li.offsetTop + 'px');
+        ol.style.setProperty('--scan-h', li.offsetHeight + 'px');
+        gsap.fromTo(parts, { yPercent: 40 * dir, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: .55, stagger: .05, ease: 'expo.out', overwrite: true });
+      };
+      show(0);
+      const st = { trigger: '.standard-grid', start: 'center center', end: '+=230%' };
+      ScrollTrigger.create({ ...st, pin: true, onUpdate: self => show(Math.min(items.length - 1, Math.floor(self.progress * items.length))) });
+      gsap.fromTo(state, { twist: Math.PI }, { twist: Math.PI * 3, ease: 'none', immediateRender: false, scrollTrigger: { ...st, scrub: true } });
+      return () => { items.forEach(el => el.classList.remove('is-active')); ol.style.removeProperty('--scan-x'); ol.style.removeProperty('--scan-y'); ol.style.removeProperty('--scan-h'); };
+    });
 
     // ======== 9. Closing frame: night returns, the object lands on "matter." ========
     // The anchor moves with the page, so the shot lands when the title is centred and then rides
@@ -358,7 +406,7 @@ async function direct({ canvas, frontCanvas, state }) {
     gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: scrub('#install', { start: 'top bottom', end: () => landAt() }) })
       .fromTo('.backdrop-night', { autoAlpha: 1, '--iris': '0px', '--ix': () => SHOTS.standard().x * 100 + '%', '--iy': () => SHOTS.standard().y * 100 + '%' },
         { '--iris': fullIris, ease: 'power2.in', immediateRender: false }, 0)
-      .fromTo(state, { ...at('standard'), solid: 0, wire: 1, night: 0 }, {
+      .fromTo(state, { ...at('standard'), solid: 0, wire: .55, night: 0 }, {
         x: () => close().x, y: () => (close().docY - landAt()) / window.innerHeight, size: () => close().size,
         solid: 1, wire: 0, night: 1, ease: 'power2.inOut', immediateRender: false,
       }, 0);

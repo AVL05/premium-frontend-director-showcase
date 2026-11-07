@@ -96,6 +96,17 @@ Polish: viewfinder cursor (four corners, difference blend, native cursor kept, f
 
 Overlays (`StageOverlay.jsx`) are aria-hidden SVG positioned on the object each frame from `stage.metrics`; strokes and type are divided by the px-per-unit so they stay a constant screen size.
 
+## Art-direction pass 3 (2026-11-07)
+Self-critique after pass 2 named three weak spots; all three are addressed.
+
+1. **Craft, lower half.** Each discipline row gains its own stroked drawing, drawn in by scroll: a frame with thirds and focal point (Art direction), a layout resolving into components (Frontend engineering), the four review viewports crossed by a scan line (Visual proof). On hover the heading's width axis opens (wdth 62 → 82) and turns signal red.
+2. **Standard.** The list pins on desktop and becomes a **slate**: each gate in turn takes it (number, name and the evidence it asks for, from `quality-gates.md`), a signal bar tracks the active row and the blueprint turns behind the slate. The legend shows the only three outcomes (pass, fail, not run) without assigning any. The evidence text is now in every list item, so the static and mobile views carry the same content; the slate itself is an aria-hidden copy.
+3. **Repetition.** Chapter titles no longer share one entrance: rise (Process, Install, bookending the opening), width morph from wide/light to condensed/black (Craft), typing (Session), a scanner wipe (Standard).
+
+Not done: a gallery of real projects built with the skill. It needs real work and permission to show it; nothing is invented in its place.
+
+- Mobile process forms are now scrubbed by scroll like the desktop take. The earlier time-based tweens kept writing after a fast scroll and left the Prove frames and the solid object over the gates (reproduced at 375 px).
+
 ## Implementation notes
 - The intro animates its own keys (`intro`, `introMove`); the stage combines them with the scroll-driven `solid`/`zoom`/`twist`. Before this, a visitor who scrolled during the first ~3 s could have the intro overwrite a later shot (reproduced: Direct showed the solid object).
 - The night halo uses normal blending: additive blending wrote alpha 1 across the whole quad of the transparent canvas and showed its rectangle.
@@ -119,6 +130,7 @@ Evidence: `artifacts/before/hero-1440.jpg`, `artifacts/after/01–17-*.jpg` (loc
 | G8 Performance | PARTIAL | Production: CLS 0 (buffered observer), 11 JS files ≈ 322 KB compressed in total, of which `three` ≈ 132 KB loads lazily at ≈ 0.5 s, after first paint. LCP not captured (pane hidden). Lighthouse NOT RUN; FPS not measured |
 | G9 Assets/content | PASS | Original geometry, OFL fonts, no fabricated claims; the session is labelled illustrative |
 | G10 Regression | PASS | Install command, copy, external links (`noopener noreferrer`), skip link, mobile menu unchanged |
+| G11 (pass 3) | PASS (internal, qualitative) | `artifacts/after/30–35-*`: discipline drawings, slate at G7 and G11, Craft width morph, Standard wipe, gates at 375. Lint clean, build OK, production CLS 0, no console warnings or errors across a Motion off/on restart, no horizontal overflow at 375. Owner acceptance pending |
 | G11 (pass 2) | PASS (internal, qualitative) | `artifacts/after/20–28-*`: threading over the headline, A/B/C directions, blueprint, viewport frames, portal sequence, macro session, mobile Direct. Re-checked after pass 2: lint clean, build OK, production CLS 0, 11 JS files ≈ 325 KB compressed (three ≈ 133 KB, lazy), no console errors, Motion off/on round trip restores everything, no horizontal overflow at 375. Owner acceptance pending |
 | G11 Visual ambition | PASS (internal, qualitative) | Before: static SVG sculpture on paper. After: real-time WebGL object, intro dissolve, iris + letterbox, horizontal take with the object morphing points → blueprint → solid → rim-lit, kinetic variable type, typed session. Structural, not cosmetic. Owner acceptance pending |
 
