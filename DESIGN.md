@@ -44,7 +44,7 @@ No ambient particle wallpaper (points exist only as a state of the object), no p
 
 ## Design tokens
 ### Palette
-- Paper `#F3F0E9` — principal surface. Ink `#171817` — primary text. Muted `#686963`.
+- Paper `#F3F0E9` — principal surface. Ink `#171817` — primary text. Muted `#5F605A` (4.4:1 on the `#E8E5DD` Standard surface was below AA for small text; now above 5:1 on both light surfaces).
 - Signal `#CD4F38` — expressive accent; not a background for small text.
 - Cinema `#101315`, Matte `#070809` — night surfaces. Rim `#EE7A5F` — light on the object at night only.
 - Separators `rgba(23,24,23,.2)` on paper, `rgba(243,240,233,.22)` on cinema.
@@ -60,7 +60,8 @@ No ambient particle wallpaper (points exist only as a state of the object), no p
 - 44px minimum targets.
 
 ## Components and states
-- Header: wordmark, jump links, **Motion on/off** toggle (persists per viewer, satisfies WCAG 2.2.2 pause for the idle rotation), mobile menu with Escape.
+- Header: wordmark, jump links, **Motion on/off** toggle (persists per viewer, satisfies WCAG 2.2.2 pause for the idle rotation), mobile menu with Escape. Fixed: transparent over the opening frame; past it, a matte bar (the letterbox) that slides away while scrolling down, returns on the first scroll up and always shows on keyboard focus.
+- Landmarks: `header`, `main#content`, `footer` are siblings, so each keeps its landmark role.
 - Stage: fixed `<canvas aria-hidden>` behind content; never holds content or controls.
 - Poster: the original SVG sculpture renders in the hero until WebGL is ready, and stays as the fallback.
 - Install command: copy with announced status; on failure the command is selected.
@@ -133,6 +134,26 @@ Evidence: `artifacts/before/hero-1440.jpg`, `artifacts/after/01–17-*.jpg` (loc
 | G11 (pass 3) | PASS (internal, qualitative) | `artifacts/after/30–35-*`: discipline drawings, slate at G7 and G11, Craft width morph, Standard wipe, gates at 375. Lint clean, build OK, production CLS 0, no console warnings or errors across a Motion off/on restart, no horizontal overflow at 375. Owner acceptance pending |
 | G11 (pass 2) | PASS (internal, qualitative) | `artifacts/after/20–28-*`: threading over the headline, A/B/C directions, blueprint, viewport frames, portal sequence, macro session, mobile Direct. Re-checked after pass 2: lint clean, build OK, production CLS 0, 11 JS files ≈ 325 KB compressed (three ≈ 133 KB, lazy), no console errors, Motion off/on round trip restores everything, no horizontal overflow at 375. Owner acceptance pending |
 | G11 Visual ambition | PASS (internal, qualitative) | Before: static SVG sculpture on paper. After: real-time WebGL object, intro dissolve, iris + letterbox, horizontal take with the object morphing points → blueprint → solid → rim-lit, kinetic variable type, typed session. Structural, not cosmetic. Owner acceptance pending |
+
+## Pre-publication audit (2026-11-07)
+Browser: the Claude desktop built-in browser (Chromium, software rendering, no GPU), production build (`next start`), 1440×900, 768×1024 and 375×812. Art direction untouched; only defects were fixed.
+
+| Defect found | Fix |
+| --- | --- |
+| **Install CTA (and the End key, or a reload near the bottom) landed on an unreadable frame.** The Craft portal hides the night layer; jumping straight to the closing chapter never rendered the start of the tween that shows it again, so light text sat on the paper backdrop. | `autoAlpha: 1` added to the end values of the closing tween (`Experience.jsx`). Re-checked: the CTA lands at the chapter top with night visible and the command in view. |
+| The header scrolled away with the first screen: navigation, the primary link and the Motion switch were unreachable afterwards. | Fixed header with a docked, auto-hiding bar (see Components). Re-checked at 1440 and 375: hidden on scroll down, shown on scroll up, mobile menu and jump links work. |
+| The install command wrapped inside an argument (`-a` / `claude-code`). | Each argument is a no-wrap token; the selected and copied text is unchanged. |
+| Muted text on the Standard surface was 4.4:1 (AA needs 4.5:1). | Token darkened (see Palette). Scan of every visible text node outside the cinema frame in the static page: no failures. |
+| `header` and `footer` were inside `main`, so they lost their landmark roles. | Siblings of `main#content`. |
+| Copy fallback only selected the text. | After selecting, it tries the legacy copy; otherwise the text stays selected and the failure is announced. |
+
+Checks run: `npm run lint` clean, `npm run build` succeeds, no console errors, no horizontal overflow at 768 and 375, links verified (skill repository and quality-gates path return 200; the install command is identical to the one in the skill's README and the skill path `skills/premium-frontend-director` exists). Copy with a real click reports success in the pane.
+
+Not run or not verifiable here: the install command itself (`npx skills add …` would install files); frame rate and Lighthouse (the pane renders WebGL in software, so timings would be meaningless); screen-reader pass; OS-level reduced-motion emulation.
+
+**Open before publishing:** the showcase repository is private, so the "View showcase source" link answers 404 to the public. Make the repository public, or remove that link, before deploying.
+
+Known and left as is: on narrow screens the blueprint wireframe passes behind the gate list while travelling to the closing frame (a few hundred pixels of scroll, text stays readable).
 
 ## Prototype gate
 - Slice 1 (stage, opening frame, lights-down) was reviewed in the browser first; the half-dimmed grey frame it showed was replaced by the iris before the other chapters were rebuilt.

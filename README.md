@@ -15,7 +15,12 @@ Visit `http://localhost:3000`.
 
 ## Stack
 
-Next.js App Router, React, JavaScript, CSS (no heavy animation libraries by default). Fonts use locally available system fallbacks with optional hosted Google Fonts via CSS if later approved.
+Next.js App Router, React, JavaScript and plain CSS. The continuous take uses `three` (one WebGL stage, loaded lazily), `gsap` (ScrollTrigger and SplitText) and `lenis` (smooth scroll), all on a single ticker. Archivo and DM Sans are self-hosted at build time by `next/font`. Without WebGL, with Motion off or with `prefers-reduced-motion`, the same content renders as a static page with an SVG sculpture.
+
+```bash
+npm run lint
+npm run build
+```
 
 ## Principles
 
@@ -37,6 +42,6 @@ The CLI installer requires Node.js 22.20+; the skill itself is portable. Use pro
 
 ## Project status
 
-Initial implementation committed. Browser screenshots, Lighthouse scores and accessibility audits must be collected before calling the site production-ready.
+Implemented and reviewed in a real browser; the gates that were run, and those that were not, are listed in the validation tables of [DESIGN.md](DESIGN.md). Lighthouse, frame-rate measurements and a screen-reader pass have not been run yet, so no scores are claimed.
 
 Licensed under MIT. Independent project, not affiliated with Anthropic, OpenAI or Vercel.

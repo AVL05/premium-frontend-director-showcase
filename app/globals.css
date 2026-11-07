@@ -1,6 +1,6 @@
 /* ============ Tokens ============ */
 :root{
-  --paper:#f3f0e9;--ink:#171817;--muted:#686963;--signal:#cd4f38;--rim:#ee7a5f;--cinema:#101315;--matte:#070809;--console:#121516;
+  --paper:#f3f0e9;--ink:#171817;--muted:#5f605a;--signal:#cd4f38;--rim:#ee7a5f;--cinema:#101315;--matte:#070809;--console:#121516;
   --line:rgba(23,24,23,.2);--line-light:rgba(243,240,233,.22);
   --gutter:clamp(22px,4vw,76px);--header-h:84px;
   --display:var(--font-display),'Arial Narrow',Arial,sans-serif;--text:var(--font-text),Arial,sans-serif;
@@ -21,7 +21,13 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 ::selection{background:var(--signal);color:white}
 
 /* ============ Header (overlays the opening frame) ============ */
-.site-header{position:absolute;inset:0 0 auto;height:var(--header-h);padding:0 var(--gutter);display:flex;align-items:center;gap:clamp(20px,3vw,52px);z-index:30}
+.site-header{position:fixed;inset:0 0 auto;height:var(--header-h);padding:0 var(--gutter);display:flex;align-items:center;gap:clamp(20px,3vw,52px);z-index:30;color:var(--ink);transition:transform .45s var(--ease-out),background-color .3s,color .3s}
+/* Past the opening frame the header becomes a matte bar (the letterbox), hidden while scrolling down. */
+.site-header--docked{background:var(--matte);color:var(--paper)}
+.site-header--docked .brand-mark{border-color:var(--paper)}
+.site-header--docked :is(a,button):focus-visible{outline-color:#f08a72}
+.site-header--hidden{transform:translateY(-100%)}
+.site-header--hidden:focus-within{transform:none}
 .brand{display:flex;align-items:center;gap:13px;margin-right:auto;font-size:10px;font-weight:700;line-height:1.24;letter-spacing:.06em;text-transform:uppercase}
 .brand-mark{height:40px;width:40px;border:1.5px solid var(--ink);border-radius:50%;display:grid;place-items:center;font:800 22px var(--display);letter-spacing:-.12em;padding-right:4px}.brand-mark span{color:var(--signal)}
 .navigation{display:flex;align-items:center;gap:clamp(20px,3vw,52px);font-size:13px;font-weight:600}
@@ -198,6 +204,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 .chapter--install>:not(.chapter-title,.frame-marks){position:relative;z-index:1}
 .install-command{margin-top:clamp(40px,7svh,72px);max-width:980px;border:1px solid #575954;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 20px 20px 24px;background:rgba(16,19,21,.6)}
 .install-command code{font-family:var(--mono);font-size:clamp(12px,1.2vw,15px);overflow-wrap:break-word;line-height:1.6;min-width:0}
+.cmd-token{white-space:nowrap}
 .install-command button{border:1px solid #8b8c87;background:transparent;color:var(--paper);min-height:44px;padding:0 18px;white-space:nowrap;cursor:pointer;transition:background .2s,color .2s}
 .install-command button:hover{background:var(--paper);color:var(--ink)}
 .install-actions{display:flex;flex-wrap:wrap;gap:16px 48px;margin-top:clamp(40px,7svh,72px)}
@@ -307,8 +314,10 @@ html.lenis{scroll-behavior:auto}
   :root{--header-h:72px}
   .site-header{gap:10px}
   .brand-mark{width:36px;height:36px;font-size:20px}.brand{font-size:9px}
-  .mobile-menu{display:flex;align-items:center;gap:10px;min-height:44px;background:none;border:1px solid var(--line);padding:0 14px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}.mobile-menu span{font-size:20px}
-  .navigation{display:none;position:absolute;top:var(--header-h);left:0;right:0;background:var(--paper);border-bottom:1px solid var(--line);padding:14px var(--gutter) 22px;flex-direction:column;align-items:stretch;gap:4px;box-shadow:0 25px 30px rgba(0,0,0,.08)}
+  .mobile-menu{display:flex;align-items:center;gap:10px;min-height:44px;background:none;border:1px solid var(--line);padding:0 14px;font-size:13px;font-weight:700;color:inherit;cursor:pointer}.mobile-menu span{font-size:20px}
+  .site-header--docked .mobile-menu{border-color:var(--line-light)}
+  .navigation{display:none;position:absolute;top:var(--header-h);left:0;right:0;background:var(--paper);color:var(--ink);border-bottom:1px solid var(--line);padding:14px var(--gutter) 22px;flex-direction:column;align-items:stretch;gap:4px;box-shadow:0 25px 30px rgba(0,0,0,.08)}
+  .site-header--docked .navigation :is(a,button):focus-visible{outline-color:var(--signal)}
   .navigation--open{display:flex}.navigation a:last-child{align-self:flex-start}
   /* Mobile re-stage: the word is threaded through the centre of the ring. */
   .ring-box,.cinema-title .ring-box{--ring:3.7em;right:calc(50% - var(--ring) / 2);bottom:calc(.36em - var(--ring) / 2)}

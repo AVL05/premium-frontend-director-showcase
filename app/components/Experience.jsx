@@ -405,7 +405,10 @@ async function direct({ canvas, frontCanvas, state }) {
     const landAt = () => Math.min(close().docY - window.innerHeight * .5, maxScroll());
     gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: scrub('#install', { start: 'top bottom', end: () => landAt() }) })
       .fromTo('.backdrop-night', { autoAlpha: 1, '--iris': '0px', '--ix': () => SHOTS.standard().x * 100 + '%', '--iy': () => SHOTS.standard().y * 100 + '%' },
-        { '--iris': fullIris, ease: 'power2.in', immediateRender: false }, 0)
+        // autoAlpha is repeated in the end values: the Craft portal hides the night layer, and a jump
+        // straight to the end (Install CTA, End key, reload near the bottom) never renders this
+        // tween's start, which left light text on the paper backdrop.
+        { '--iris': fullIris, autoAlpha: 1, ease: 'power2.in', immediateRender: false }, 0)
       .fromTo(state, { ...at('standard'), solid: 0, wire: .55, night: 0 }, {
         x: () => close().x, y: () => (close().docY - landAt()) / window.innerHeight, size: () => close().size,
         solid: 1, wire: 0, night: 1, ease: 'power2.inOut', immediateRender: false,

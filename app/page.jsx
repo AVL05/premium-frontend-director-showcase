@@ -85,11 +85,12 @@ function Monument({ id, kicker, word, fit, className = 'chapter-title', children
 }
 
 export default function Home() {
-  return <main id="top">
+  // header and footer sit outside <main> so they keep their banner and contentinfo landmarks.
+  return <div id="top">
     <a className="skip-link" href="#content">Skip to content</a>
     <Experience/>
     <Header/>
-    <div id="content">
+    <main id="content">
       {/* Signature scene. Static: two stacked chapters with the SVG sculpture.
           With motion: one pinned stage, the WebGL object, an iris into night and a letterbox. */}
       <div className="scene">
@@ -218,7 +219,7 @@ export default function Home() {
         <CopyCommand command={installCommand}/>
         <div className="install-actions"><a className="text-link" href={repository} target="_blank" rel="noopener noreferrer">Explore the skill <Arrow diagonal/></a><a className="text-link" href={showcaseRepo} target="_blank" rel="noopener noreferrer">View showcase source <Arrow diagonal/></a></div>
       </section>
-    </div>
+    </main>
     <footer className="footer"><span>© {new Date().getFullYear()} Premium Frontend Director</span><span>An independent open-source showcase</span><a href="#top">Back to top <span aria-hidden="true">↑</span></a></footer>
-  </main>;
+  </div>;
 }
