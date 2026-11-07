@@ -21,5 +21,8 @@ export const metadata = {
 export const viewport = { themeColor: '#f3f0e9' };
 
 export default function RootLayout({ children }) {
-  return <html lang="en" className={`${display.variable} ${text.variable}`}><body>{children}</body></html>;
+  // Experience.jsx adds motion classes to <html> after hydration; React does not own them.
+  return <html lang="en" className={`${display.variable} ${text.variable}`} suppressHydrationWarning>
+    <body>{children}</body>
+  </html>;
 }

@@ -1,9 +1,10 @@
 /* ============ Tokens ============ */
 :root{
-  --paper:#f3f0e9;--ink:#171817;--muted:#686963;--signal:#cd4f38;--cinema:#101315;--matte:#070809;
+  --paper:#f3f0e9;--ink:#171817;--muted:#686963;--signal:#cd4f38;--rim:#ee7a5f;--cinema:#101315;--matte:#070809;--console:#121516;
   --line:rgba(23,24,23,.2);--line-light:rgba(243,240,233,.22);
   --gutter:clamp(22px,4vw,76px);--header-h:84px;
   --display:var(--font-display),'Arial Narrow',Arial,sans-serif;--text:var(--font-text),Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Consolas,'Liberation Mono',monospace;
   --track-display:-.035em;
   --ease-out:cubic-bezier(.2,.8,.2,1);
   /* Letterbox: aims for a 2.39:1 frame, clamped so portrait phones keep a usable picture. */
@@ -14,34 +15,36 @@ html{scroll-behavior:smooth;scrollbar-color:#9a978f var(--paper);accent-color:va
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--text);-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}button{font:inherit}button,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-offset:5px}
-.chapter--install a:focus-visible,.chapter--install button:focus-visible{outline-color:#f08a72}
+:is(.process,.cinema,.chapter--install) :is(a,button):focus-visible{outline-color:#f08a72}
 .skip-link{position:fixed;left:16px;top:-80px;z-index:100;background:#fff;color:#111;padding:12px}.skip-link:focus{top:16px}
 .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 ::selection{background:var(--signal);color:white}
 
 /* ============ Header (overlays the opening frame) ============ */
-.site-header{position:absolute;inset:0 0 auto;height:var(--header-h);padding:0 var(--gutter);display:flex;align-items:center;justify-content:space-between;z-index:30}
-.brand{display:flex;align-items:center;gap:13px;font-size:10px;font-weight:700;line-height:1.24;letter-spacing:.06em;text-transform:uppercase}
+.site-header{position:absolute;inset:0 0 auto;height:var(--header-h);padding:0 var(--gutter);display:flex;align-items:center;gap:clamp(20px,3vw,52px);z-index:30}
+.brand{display:flex;align-items:center;gap:13px;margin-right:auto;font-size:10px;font-weight:700;line-height:1.24;letter-spacing:.06em;text-transform:uppercase}
 .brand-mark{height:40px;width:40px;border:1.5px solid var(--ink);border-radius:50%;display:grid;place-items:center;font:800 22px var(--display);letter-spacing:-.12em;padding-right:4px}.brand-mark span{color:var(--signal)}
 .navigation{display:flex;align-items:center;gap:clamp(20px,3vw,52px);font-size:13px;font-weight:600}
 .navigation a{min-height:44px;display:flex;align-items:center;gap:8px;transition:opacity .2s}.navigation a:hover{opacity:.55}
 .navigation a:last-child{border-bottom:1px solid;min-height:0;padding:12px 0 4px}
 .mobile-menu{display:none}
+.motion-toggle{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:0 4px;background:none;border:0;color:inherit;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.motion-toggle:disabled{cursor:not-allowed;opacity:.55}
+.motion-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid currentColor;transition:background .25s,border-color .25s}
+.motion-toggle[aria-pressed="true"] .motion-dot{background:var(--signal);border-color:var(--signal)}
 
 /* ============ Shared display type: one family, two widths ============ */
 .t-kicker,.t-word{display:block;font-family:var(--display);text-transform:uppercase}
 .t-kicker{position:relative;z-index:1;font-weight:300;font-variation-settings:'wdth' 125;letter-spacing:.01em;line-height:1}
 .t-word{position:relative;isolation:isolate;width:fit-content;font-weight:900;font-variation-settings:'wdth' 62;letter-spacing:var(--track-display);line-height:.8}
 .t-text{display:block}
-.t-word b{font-weight:inherit;color:var(--signal)}
+.t-word b,.take-name b,.disciplines b{font-weight:inherit;color:var(--signal)}
 
-/* ============ Sculpture ============ */
-/* The sculpture is sized and placed in em of the word it belongs to, so it stays locked to the
-   full stop (its red core) at every width. --dot-x/--dot-y: full-stop centre from the word's
-   right/bottom edge, measured in the browser for Archivo 900 / wdth 62. */
+/* ============ SVG sculpture (static poster and fallback) ============ */
+/* Sized in em of its word so it stays locked to the full stop (its red core) at every width.
+   --dot-x/--dot-y: full-stop centre from the word's right/bottom edge for Archivo 900 / wdth 62. */
 .ring-box{--ring:2.7em;--dot-x:.094em;--dot-y:.152em;position:absolute;width:var(--ring);aspect-ratio:1;right:calc(var(--dot-x) - var(--ring) / 2);bottom:calc(var(--dot-y) - var(--ring) / 2);pointer-events:none;z-index:-1}
 .ring-box--front{z-index:1}
-/* No ambient loop: the scroll scene is the page's one authored motion (and WCAG 2.2.2 needs no pause control). */
 .ring-svg{display:block;width:100%;height:100%}
 
 /* ============ Frame marks (viewfinder corners) ============ */
@@ -62,12 +65,12 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 .hero-base{position:relative;z-index:3;display:flex;align-items:flex-end;gap:clamp(24px,4vw,64px)}
 .hero-lede{margin:0;max-width:34ch;font-size:clamp(16px,1.25vw,19px);line-height:1.5}
 .hero-actions{display:flex;align-items:center;gap:28px;flex-wrap:wrap}
-.button{display:inline-flex;align-items:center;min-height:48px;padding:0 22px;background:var(--ink);color:var(--paper);font-weight:600;font-size:15px;border-radius:999px;transition:background .25s,transform .2s var(--ease-out)}
-.button:hover{background:#000;transform:translateY(-1px)}.button:active{transform:translateY(1px)}
+.button{display:inline-flex;align-items:center;min-height:48px;padding:0 22px;background:var(--ink);color:var(--paper);font-weight:600;font-size:15px;border-radius:999px;transition:background .25s}
+.button:hover{background:#000}
 .text-link{display:inline-flex;align-items:center;gap:10px;font-weight:600;border-bottom:1px solid;padding:12px 0 6px}
 .text-link svg{transition:transform .25s var(--ease-out)}.text-link:hover svg{transform:translateY(2px)}
 
-/* ============ Cinema frame (static by default) ============ */
+/* ============ Cinema frame ============ */
 .cinema{position:relative;min-height:100svh;color:var(--paper);overflow:hidden;isolation:isolate}
 .cinema-ground{position:absolute;inset:0;background:radial-gradient(ellipse 48% 52% at 72% 50%,rgba(205,79,56,.10),transparent 70%),var(--cinema)}
 .bar{position:absolute;left:0;right:0;height:var(--bar);background:var(--matte);z-index:2}
@@ -79,43 +82,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 .cinema-title .ring-box{--ring:3.3em}
 .cinema-subtitle{position:absolute;left:0;right:0;bottom:calc(-1 * var(--bar));height:var(--bar);margin:0;display:grid;place-items:center;text-align:center;font-size:clamp(15px,1.25vw,19px);line-height:1.4;color:#e7e3da;padding:0 8px}
 
-/* ============ Signature transition (progressive enhancement) ============
-   Paper opening -> lights down -> letterbox closes -> the same sculpture, rim-lit, in cinema.
-   Only composited properties animate (opacity, transform, translate, rotate, scale). */
-@supports (animation-timeline:view()) {
-  @media (prefers-reduced-motion:no-preference) {
-    .scene{position:relative;height:250svh;view-timeline:--scene block}
-    .scene>.hero,.scene>.cinema{position:sticky;top:0;height:100svh;min-height:0}
-    .scene>.cinema{margin-top:-100svh;pointer-events:none}
-    .scene-mark{position:absolute;top:120svh;left:0}
-    .scene .cinema-copy{pointer-events:none}
-    .scene .cinema-copy :is(.cinema-subtitle,.t-kicker,.t-text){pointer-events:auto}
-
-    .scene :is(.hero-meta,.hero-base,.frame-marks--paper,.hero-title .t-kicker,.hero-title .t-text,.ring-box,.cinema-ground,.bar,.frame-marks--night,.cinema-subtitle,.cinema-title .t-kicker,.cinema-title .t-text){animation-timeline:--scene;animation-fill-mode:both;animation-timing-function:linear}
-    .scene :is(.hero-meta,.hero-base,.frame-marks--paper){animation-name:fg-out;animation-range:contain 2% contain 24%}
-    /* Camera tilt: the type leaves faster than the object, which reads as depth rather than a dissolve. */
-    .scene :is(.hero-title .t-kicker,.hero-title .t-text){animation-name:type-out;animation-range:contain 6% contain 34%;animation-timing-function:cubic-bezier(.5,0,.75,0)}
-    .scene .cinema-ground{animation-name:lights-down;animation-range:contain 16% contain 50%}
-    .scene .bar{animation-name:letterbox;animation-range:contain 22% contain 56%;animation-timing-function:var(--ease-out)}
-    .scene .frame-marks--night{animation-name:fade-in;animation-range:contain 46% contain 62%}
-    .scene .ring-box--paper{animation-name:ring-turn;animation-range:contain 10% contain 60%}
-    .scene .ring-box--front{animation-name:fade-out,ring-turn;animation-range:contain 8% contain 32%,contain 10% contain 60%}
-    .scene .ring-box--night{animation-name:ring-settle,fade-in;animation-range:contain 30% contain 100%,contain 30% contain 54%}
-    .scene .cinema-subtitle{animation-name:fade-in;animation-range:contain 50% contain 68%}
-    .scene :is(.cinema-title .t-kicker,.cinema-title .t-text){animation-name:rise-in;animation-range:contain 46% contain 72%;animation-timing-function:var(--ease-out)}
-  }
-}
-@keyframes fg-out{to{opacity:0;translate:0 -6svh;visibility:hidden}}
-@keyframes type-out{60%{opacity:.85}to{opacity:0;translate:0 -22svh;visibility:hidden}}
-@keyframes fade-out{to{opacity:0;visibility:hidden}}
-@keyframes lights-down{from{opacity:0}to{opacity:1}}
-@keyframes letterbox{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-@keyframes fade-in{from{opacity:0;visibility:hidden}to{opacity:1;visibility:visible}}
-@keyframes rise-in{from{opacity:0;visibility:hidden;translate:0 5svh}to{opacity:1;visibility:visible;translate:0 0}}
-@keyframes ring-turn{from{rotate:0deg;scale:1}to{rotate:14deg;scale:1.1}}
-@keyframes ring-settle{from{rotate:6deg;scale:.94}to{rotate:22deg;scale:1}}
-
-/* ============ Chapters: the same two-width sentence, no section numbers or labels ============ */
+/* ============ Chapters ============ */
 .chapter{position:relative;padding:clamp(96px,16svh,184px) var(--gutter)}
 .chapter::before{content:'';position:absolute;top:0;left:var(--gutter);right:var(--gutter);border-top:1px solid var(--line)}
 .chapter-title{margin:0 0 clamp(44px,8svh,96px)}
@@ -123,13 +90,46 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 /* --fit: the word's width in em, so each monument fills the measure without overflowing. */
 .chapter-title .t-word{font-size:min(calc((100vw - 2 * var(--gutter)) / var(--fit, 6)),34svh,230px)}
 .chapter-lede{margin:0;max-width:31ch;font-size:clamp(20px,2vw,31px);line-height:1.36;letter-spacing:-.015em;text-wrap:pretty}
-.chapter--philosophy .chapter-lede{margin-left:auto;margin-right:8vw}
 
+/* Process: five takes. Static: a vertical sequence on cinema. Motion: a pinned horizontal take. */
+.process{position:relative;background:var(--cinema);color:var(--paper);--line:var(--line-light)}
+.process-track{display:flex;flex-direction:column}
+.take{position:relative;padding:clamp(72px,12svh,140px) var(--gutter);border-top:1px solid var(--line-light)}
+.take--head{border-top:0}
+.take--head .chapter-title{margin-bottom:clamp(28px,5svh,56px)}
+.process .chapter-lede,.take-copy{color:#e7e3da}
+.take-slate{display:flex;gap:10px;margin:0 0 clamp(20px,3svh,32px);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#a9a59c}
+.take-slate span:first-child{color:var(--rim)}
+.take-name{margin:0;font-family:var(--display);font-weight:900;font-variation-settings:'wdth' 62;text-transform:uppercase;letter-spacing:var(--track-display);line-height:.82;font-size:clamp(76px,14vw,250px)}
+.take-copy{margin:clamp(22px,3.5svh,36px) 0 0;max-width:32ch;font-size:clamp(18px,1.55vw,25px);line-height:1.42}
+.process-hud{display:none}
+
+/* Craft: the kinetic line. Its width axis answers scroll velocity (set as --w by script). */
+.kinetic{--w:100;margin:0 calc(-1 * var(--gutter)) clamp(56px,9svh,110px);overflow:hidden;pointer-events:none}
+.kinetic-row{white-space:nowrap;font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(54px,8.6vw,156px);line-height:1;letter-spacing:-.02em;font-variation-settings:'wdth' var(--w)}
+.kinetic-track{display:inline-flex;gap:.28em;will-change:transform}
+.kinetic-track span{display:inline-flex;gap:.28em}
+.kinetic-track b{font-weight:inherit;color:var(--signal)}
+.kinetic-row--1{color:transparent;-webkit-text-stroke:1.5px var(--ink)}
+.kinetic-row--1 .kinetic-track{transform:translateX(-30%)}
+.kinetic-row--1 b{-webkit-text-stroke:0;color:var(--signal)}
 .disciplines{list-style:none;margin:0;padding:0;border-bottom:1px solid var(--line)}
-.disciplines li{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:var(--gutter);align-items:baseline;padding:clamp(26px,4.4svh,46px) 0;border-top:1px solid var(--line)}
+.disciplines li{position:relative;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:var(--gutter);align-items:baseline;padding:clamp(26px,4.4svh,46px) 0;border-top:1px solid var(--line)}
 .disciplines h3{margin:0;font-family:var(--display);font-weight:900;font-variation-settings:'wdth' 62;text-transform:uppercase;letter-spacing:var(--track-display);line-height:.88;font-size:clamp(40px,6.2vw,108px)}
 .disciplines p{margin:0;max-width:36ch;color:var(--muted);font-size:clamp(16px,1.2vw,18px);line-height:1.5}
 
+/* Session: an illustrative transcript, typed when it enters (full text is always in the DOM). */
+.session{margin:0;max-width:1040px;background:var(--console);color:#e7e3da;border-radius:16px;overflow:hidden;box-shadow:0 50px 90px -50px rgba(7,8,9,.6),0 0 0 1px rgba(23,24,23,.08)}
+.session-bar{display:flex;align-items:center;gap:18px;padding:15px 20px;border-bottom:1px solid rgba(243,240,233,.09);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a9a59c}
+.session-dots{display:flex;gap:7px}.session-dots i{width:10px;height:10px;border-radius:50%;background:#3a3e40}
+.session-body{padding:clamp(22px,3vw,44px);font-family:var(--mono);font-size:clamp(13px,1.05vw,16px);line-height:1.75}
+.session-prompt{margin:0 0 clamp(22px,3svh,34px);display:flex;gap:14px;color:#fff}
+.session-caret,.session-phase{color:var(--rim)}
+.session-log{list-style:none;margin:0;padding:clamp(18px,2.5svh,26px) 0 0;border-top:1px dashed rgba(243,240,233,.14);display:grid;gap:6px}
+.session-log li{display:grid;grid-template-columns:10ch 1fr;gap:18px}
+.session-note{margin:22px 0 0;max-width:62ch;color:var(--muted);font-size:15px;line-height:1.5}
+
+/* Standard */
 .chapter--standard{background:#e8e5dd}
 .standard-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:var(--gutter);align-items:start}
 .standard-copy{display:flex;flex-direction:column;align-items:flex-start;gap:32px;position:sticky;top:48px}
@@ -142,33 +142,91 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 .gate--key .gate-title::after{content:'';display:inline-block;width:.22em;height:.22em;margin-left:.08em;background:var(--signal)}
 .gate-note{display:block;margin-top:12px;font-family:var(--text);font-weight:400;font-variation-settings:normal;text-transform:none;letter-spacing:0;font-size:clamp(15px,1.1vw,17px);line-height:1.45;color:var(--muted)}
 
-/* Closing frame: the cinema world returns, the sculpture's third and last appearance. */
-.chapter--install{background:var(--cinema);color:var(--paper);overflow:hidden;isolation:isolate;padding-top:calc(var(--bar) + clamp(72px,12svh,140px));--line:var(--line-light)}
+/* Closing frame: the cinema world returns, the sculpture's last appearance. */
+.chapter--install{min-height:100svh;background:var(--cinema);color:var(--paper);overflow:hidden;isolation:isolate;padding-top:calc(var(--bar) + clamp(72px,12svh,140px));padding-bottom:clamp(56px,9svh,96px);--line:var(--line-light)}
+.chapter--install .chapter-title{margin-bottom:clamp(32px,5svh,64px)}
+.chapter--install .install-command,.chapter--install .install-actions{margin-top:clamp(28px,5svh,56px)}
 .chapter--install::before{left:0;right:0;border:0;height:var(--bar);background:var(--matte)}
 .frame-marks--install{inset:calc(var(--bar) + 12px) calc(var(--gutter) - 14px) 14px;color:rgba(243,240,233,.5)}
 .chapter--install .chapter-lede{color:#e7e3da}
 .chapter--install>:not(.chapter-title,.frame-marks){position:relative;z-index:1}
-.install-command{margin-top:clamp(40px,7svh,72px);max-width:980px;border:1px solid #575954;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 20px 20px 24px}
-.install-command code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:clamp(12px,1.2vw,15px);overflow-wrap:break-word;line-height:1.6;min-width:0}
+.install-command{margin-top:clamp(40px,7svh,72px);max-width:980px;border:1px solid #575954;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 20px 20px 24px;background:rgba(16,19,21,.6)}
+.install-command code{font-family:var(--mono);font-size:clamp(12px,1.2vw,15px);overflow-wrap:break-word;line-height:1.6;min-width:0}
 .install-command button{border:1px solid #8b8c87;background:transparent;color:var(--paper);min-height:44px;padding:0 18px;white-space:nowrap;cursor:pointer;transition:background .2s,color .2s}
 .install-command button:hover{background:var(--paper);color:var(--ink)}
 .install-actions{display:flex;flex-wrap:wrap;gap:16px 48px;margin-top:clamp(40px,7svh,72px)}
-.footer{padding:30px var(--gutter);background:var(--matte);color:#bdb9b0;display:flex;justify-content:space-between;gap:20px;font-size:12px;letter-spacing:.04em}
+.footer{position:relative;z-index:2;padding:30px var(--gutter);background:var(--matte);color:#bdb9b0;display:flex;justify-content:space-between;gap:20px;font-size:12px;letter-spacing:.04em}
 .footer a{text-decoration:underline;text-underline-offset:4px;min-height:24px}
 .footer a:focus-visible{outline-color:#f08a72}
 
+/* ============ The continuous take (motion-ready only) ============
+   Layers: fixed backdrop (paper/night) < fixed WebGL stage < content < film grain.
+   Without .motion-ready everything above is the complete static composition with the SVG poster. */
+.backdrop,.stage,.grain{position:fixed;inset:0;pointer-events:none}
+.backdrop{z-index:0;background:var(--paper);display:none}
+.backdrop-night{--iris:0px;--ix:70%;--iy:50%;position:absolute;inset:0;background:radial-gradient(ellipse 55% 60% at 70% 50%,#1a1d1f,transparent 72%),var(--cinema);clip-path:circle(var(--iris) at var(--ix) var(--iy));visibility:hidden}
+.stage{z-index:1;width:100%;height:100%;display:none}
+.grain{z-index:60;display:none;opacity:.07;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.motion-ready .backdrop,.motion-ready .grain{display:block}
+.stage-live .stage{display:block}
+.motion-ready #content{position:relative;z-index:2}
+.motion-ready .site-header{z-index:40}
+.motion-ready .scene{position:relative;height:100svh}
+.motion-ready .scene>.hero,.motion-ready .scene>.cinema{position:absolute;inset:0;min-height:0;background:transparent}
+.motion-ready .scene>.cinema{pointer-events:none}
+.motion-ready .cinema-ground{display:none}
+.motion-ready .scene-mark{position:absolute;top:110svh;left:0}
+.motion-ready :is(.process,.chapter--standard,.chapter--install){background:transparent}
+.motion-ready .process .take{border-top:0}
+/* The WebGL object replaces the SVG poster once it renders. */
+.stage-live .ring-box{display:none}
+html.lenis{scroll-behavior:auto}
+.lenis.lenis-stopped{overflow:hidden}
+.magnetic{will-change:transform}
+
+@media(min-width:900px){
+  .motion-ready .process{height:100svh;overflow:hidden}
+  .motion-ready .process-track{flex-direction:row;height:100%;width:max-content}
+  .motion-ready .take{flex:0 0 100vw;height:100%;display:flex;flex-direction:column;justify-content:center;padding:var(--header-h) 50vw 12svh var(--gutter)}
+  .motion-ready .take--head{padding-right:36vw}
+  .motion-ready .take--head .t-word{font-size:min(calc(60vw / 5),30svh)}
+  .motion-ready .take-name{font-size:min(10vw,27svh);white-space:nowrap}
+  .motion-ready .process-hud{position:absolute;left:var(--gutter);right:var(--gutter);bottom:clamp(26px,5svh,52px);display:flex;align-items:center;gap:22px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#a9a59c}
+  .hud-tc{font-family:var(--mono);letter-spacing:.06em;color:var(--paper);font-variant-numeric:tabular-nums}
+  .hud-bar{position:relative;flex:1;height:1px;background:var(--line-light)}
+  .hud-bar i{position:absolute;inset:0;background:var(--rim);transform-origin:left;transform:scaleX(0)}
+}
+@media(max-width:899px){
+  /* Mobile take: the object holds the top of the frame, the copy plays underneath. */
+  .motion-ready .take:not(.take--head){min-height:100svh;padding-top:50svh}
+}
+
+/* Boot: hide only what the intro is about to reveal. The script decides during hydration
+   (motion-ready or motion-static); if it never runs, the fail-safe reveals the static frame at 2.6s. */
+@media(prefers-reduced-motion:no-preference){
+  html:not(.motion-ready,.motion-static) :is(.hero-title,.hero-meta,.hero-base,.ring-box,.frame-marks--paper,.site-header>*){visibility:hidden;animation:boot-reveal 0s 2.6s forwards}
+}
+@keyframes boot-reveal{to{visibility:visible}}
+
 /* ============ Responsive ============ */
+.navigation a{white-space:nowrap}
 @media(max-width:1100px){.standard-grid{grid-template-columns:1fr}.standard-copy{position:static}}
+@media(max-width:1000px){
+  /* The toggle keeps its text for assistive tech; visually it becomes the dot alone. */
+  .motion-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .motion-toggle{min-width:44px;justify-content:center}
+  .navigation{gap:22px}
+}
 @media(max-width:900px){
   .hero-base{flex-direction:column;align-items:flex-start;gap:22px}
 }
 @media(max-width:760px){
   :root{--header-h:72px}
+  .site-header{gap:10px}
   .brand-mark{width:36px;height:36px;font-size:20px}.brand{font-size:9px}
   .mobile-menu{display:flex;align-items:center;gap:10px;min-height:44px;background:none;border:1px solid var(--line);padding:0 14px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}.mobile-menu span{font-size:20px}
   .navigation{display:none;position:absolute;top:var(--header-h);left:0;right:0;background:var(--paper);border-bottom:1px solid var(--line);padding:14px var(--gutter) 22px;flex-direction:column;align-items:stretch;gap:4px;box-shadow:0 25px 30px rgba(0,0,0,.08)}
   .navigation--open{display:flex}.navigation a:last-child{align-self:flex-start}
-  /* Mobile re-stage: the ring is centred and the word is threaded through it. */
   /* Mobile re-stage: the word is threaded through the centre of the ring. */
   .ring-box,.cinema-title .ring-box{--ring:3.7em;right:calc(50% - var(--ring) / 2);bottom:calc(.36em - var(--ring) / 2)}
   .hero-title .t-word,.cinema-title .t-word{width:auto}
@@ -176,7 +234,6 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
   .hero-meta{font-size:10px;letter-spacing:.12em}.hero-meta span:last-child{text-align:right;max-width:13ch}
   .hero-title .t-kicker{font-size:clamp(15px,5.1vw,26px)}
   .hero-title{top:41%}
-  /* Legibility first on small screens: the ring stays wholly behind the word. */
   .ring-box--front{display:none}
   .hero-lede{font-size:16px}
   .hero-actions{width:100%;gap:18px 24px}
@@ -186,9 +243,11 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
   .cinema-subtitle{font-size:15px;padding:0 var(--gutter)}
   .chapter-title .t-kicker{font-size:clamp(15px,5.1vw,26px)}
   .chapter-title .t-word{width:auto}
-  .chapter--philosophy .chapter-lede{margin:0}
   .chapter-lede{font-size:20px}
+  .take-name{font-size:calc((100vw - 2 * var(--gutter)) / 4.6)}
   .disciplines li{grid-template-columns:1fr;gap:12px}
+  .session-log li{grid-template-columns:1fr;gap:0}
+  .session-log li+li{margin-top:8px}
   .gates{columns:1}
   .chapter--install .ring-box{--ring:3.4em}
   .install-command{flex-direction:column;align-items:stretch;padding:18px}.install-command button{align-self:flex-start}

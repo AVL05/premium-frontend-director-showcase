@@ -1,6 +1,7 @@
 import Sculpture from './components/Sculpture';
 import { Arrow } from './components/Arrow';
 import { Header, CopyCommand } from './components/interactive';
+import Experience from './components/Experience';
 
 const repository = 'https://github.com/AVL05/premium-frontend-director';
 const showcaseRepo = 'https://github.com/AVL05/premium-frontend-director-showcase';
@@ -12,22 +13,45 @@ const gates = [
   ['G9', 'Assets and content'], ['G10', 'Regression'],
   ['G11', 'Visual ambition', 'Stops a cosmetic refresh from passing as an immersive redesign.'],
 ];
+// The five phases of the skill's workflow (SKILL.md, "Workflow"), one take each.
+const takes = [
+  ['Discover', 'Read the project before touching it: routes, tokens, fonts, assets, constraints and the ambition the brief really asks for.'],
+  ['Direct', 'Three experientially distinct directions, one chosen with reasons, and a signature moment that can be verified.'],
+  ['Document', 'A DESIGN.md with tokens, states, motion and acceptance criteria. The system is written down before it is built.'],
+  ['Build', 'Vertical slices. For ambitious work the defining viewport is prototyped first, reviewed, and only then scaled.'],
+  ['Prove', 'Real browsers at 375, 768, 1440 and 1920. Every gate is reported as pass, fail or not run.'],
+];
+const kinetic = ['Composition', 'Rhythm', 'Contrast', 'Light', 'Motion', 'Proof'];
 const installCommand = 'npx skills add AVL05/premium-frontend-director --skill premium-frontend-director -a claude-code';
+const prompt = 'Use $premium-frontend-director to redesign this frontend. Audit the current repository, select a creative ambition mode, propose three brand-appropriate directions, prototype the defining moment, implement one coherent system, review actual desktop and mobile rendering, and report objective quality gates.';
+const sessionLines = [
+  ['Discover', 'framework, routes, tokens, fonts and assets inventoried'],
+  ['Direct', 'ambition: Immersive · three directions · one chosen'],
+  ['Document', 'DESIGN.md written: tokens, motion, fallbacks'],
+  ['Build', 'first viewport prototyped before the rest'],
+  ['Prove', '375 · 768 · 1440 · 1920 reviewed in a real browser'],
+  ['Report', 'G1–G11, each pass, fail or not run, with evidence'],
+];
 
 function FrameMarks({ className }) {
   return <span className={'frame-marks ' + className} aria-hidden="true"><i/><i/><i/><i/></span>;
 }
 
+function Monument({ id, kicker, word, fit, className = 'chapter-title', children }) {
+  return <h2 id={id} className={className} style={fit ? { '--fit': fit } : undefined}>
+    <span className="t-kicker">{kicker}</span>
+    <span className="t-word"><span className="t-text">{word}<b>.</b></span>{children}</span>
+  </h2>;
+}
+
 export default function Home() {
   return <main id="top">
     <a className="skip-link" href="#content">Skip to content</a>
+    <Experience/>
     <Header/>
     <div id="content">
-      {/*
-        Signature scene. Without scroll-driven animation support, or with reduced motion,
-        these render as two static chapters: the paper opening, then the cinema frame.
-        With support, both pin to one stage and the paper world is letterboxed into cinema.
-      */}
+      {/* Signature scene. Static: two stacked chapters with the SVG sculpture.
+          With motion: one pinned stage, the WebGL object, an iris into night and a letterbox. */}
       <div className="scene">
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-fg">
@@ -44,7 +68,7 @@ export default function Home() {
             <div className="hero-base">
               <p className="hero-lede">Premium Frontend Director teaches coding agents to art-direct a frontend, build it, and prove it in a real browser against 11 named quality gates.</p>
               <div className="hero-actions">
-                <a className="button" href="#install">Install the skill</a>
+                <a className="button magnetic" href="#install">Install the skill</a>
                 <a className="text-link" href="#experience">Enter the scene <Arrow down/></a>
               </div>
             </div>
@@ -59,25 +83,40 @@ export default function Home() {
           <div className="bar bar--bottom" aria-hidden="true"/>
           <FrameMarks className="frame-marks--night"/>
           <div className="cinema-copy">
-            <h2 id="cinema-title" className="cinema-title"><span className="t-kicker">Beyond</span><span className="t-word"><span className="t-text">the template<b>.</b></span><span className="ring-box ring-box--night"><Sculpture className="ring-svg" variant="night"/></span></span></h2>
+            <Monument id="cinema-title" className="cinema-title" kicker="Beyond" word="the template">
+              <span className="ring-box ring-box--night"><Sculpture className="ring-svg" variant="night"/></span>
+            </Monument>
             <p className="cinema-subtitle">Same object. New light. Direction decides what changes, and what stays.</p>
           </div>
         </section>
       </div>
 
-      <section className="chapter chapter--philosophy" id="philosophy" aria-labelledby="philosophy-title">
-        <h2 id="philosophy-title" className="chapter-title" style={{ '--fit': 6.6 }}>
-          <span className="t-kicker">Less generic.</span>
-          <span className="t-word"><span className="t-text">More genuine<b>.</b></span></span>
-        </h2>
-        <p className="chapter-lede">Not another prompt for prettier buttons. A disciplined workflow for concept, composition, real implementation and visual proof. The difference is in the decisions.</p>
+      <section className="process" id="process" aria-labelledby="process-title">
+        <div className="process-track">
+          <div className="take take--head">
+            <Monument id="process-title" kicker="From noise" word="to form" fit={5}/>
+            <p className="chapter-lede">Not another prompt for prettier buttons. A disciplined workflow that takes a project from raw material to a directed, proven experience, in five takes.</p>
+          </div>
+          {takes.map(([name, copy], i) => <article className="take" key={name} aria-labelledby={'take-' + i}>
+            <p className="take-slate"><span>Take {String(i + 1).padStart(2, '0')}</span><span aria-hidden="true">/ 05</span></p>
+            <h3 id={'take-' + i} className="take-name">{name}<b>.</b></h3>
+            <p className="take-copy">{copy}</p>
+          </article>)}
+        </div>
+        <div className="process-hud" aria-hidden="true">
+          <span className="hud-tc">00:00:00:00</span>
+          <span className="hud-bar"><i/></span>
+          <span className="hud-label">Noise to form</span>
+        </div>
       </section>
 
       <section className="chapter chapter--craft" id="craft" aria-labelledby="craft-title">
-        <h2 id="craft-title" className="chapter-title" style={{ '--fit': 7.1 }}>
-          <span className="t-kicker">Three disciplines.</span>
-          <span className="t-word"><span className="t-text">One direction<b>.</b></span></span>
-        </h2>
+        <Monument id="craft-title" kicker="Three disciplines." word="One direction" fit={7.1}/>
+        <div className="kinetic" aria-hidden="true">
+          {[0, 1].map(row => <div className={'kinetic-row kinetic-row--' + row} key={row}>
+            <div className="kinetic-track">{[...kinetic, ...kinetic].map((w, i) => <span key={i}>{w}<b>·</b></span>)}</div>
+          </div>)}
+        </div>
         <ul className="disciplines">
           <li><h3>Art direction</h3><p>Creative concepts, typography, composition and an unmistakable point of view.</p></li>
           <li><h3>Frontend engineering</h3><p>Production-minded components, semantic markup and intentional interactions.</p></li>
@@ -85,11 +124,22 @@ export default function Home() {
         </ul>
       </section>
 
+      <section className="chapter chapter--session" id="session" aria-labelledby="session-title">
+        <Monument id="session-title" kicker="One prompt." word="The whole take" fit={6.4}/>
+        <figure className="session">
+          <figcaption className="session-bar"><span className="session-dots" aria-hidden="true"><i/><i/><i/></span><span>Illustrative session</span></figcaption>
+          <div className="session-body">
+            <p className="session-prompt"><span className="session-caret" aria-hidden="true">›</span><span className="session-typed">{prompt}</span></p>
+            <ol className="session-log">
+              {sessionLines.map(([phase, line]) => <li key={phase}><span className="session-phase">{phase}</span><span>{line}</span></li>)}
+            </ol>
+          </div>
+        </figure>
+        <p className="session-note">The prompt is the one suggested in the skill. The log shows the order of the workflow, not the result of a real run.</p>
+      </section>
+
       <section className="chapter chapter--standard" id="standard" aria-labelledby="standard-title">
-        <h2 id="standard-title" className="chapter-title" style={{ '--fit': 3.6 }}>
-          <span className="t-kicker">Looks are not</span>
-          <span className="t-word"><span className="t-text">enough<b>.</b></span></span>
-        </h2>
+        <Monument id="standard-title" kicker="Looks are not" word="enough" fit={3.6}/>
         <div className="standard-grid">
           <div className="standard-copy">
             <p className="chapter-lede">Every run is reported against 11 named gates, each marked pass, fail or not run. Nothing is claimed without evidence.</p>
@@ -103,10 +153,9 @@ export default function Home() {
 
       <section className="chapter chapter--install" id="install" aria-labelledby="install-title">
         <FrameMarks className="frame-marks--install"/>
-        <h2 id="install-title" className="chapter-title" style={{ '--fit': 4.2 }}>
-          <span className="t-kicker">Make something</span>
-          <span className="t-word"><span className="t-text">matter<b>.</b></span><span className="ring-box ring-box--close"><Sculpture className="ring-svg" variant="night"/></span></span>
-        </h2>
+        <Monument id="install-title" kicker="Make something" word="matter" fit={4.2}>
+          <span className="ring-box ring-box--close"><Sculpture className="ring-svg" variant="night"/></span>
+        </Monument>
         <p className="chapter-lede">Install the skill and give your next frontend project a point of view. Open source under MIT, compatible with Claude Code and Codex.</p>
         <CopyCommand command={installCommand}/>
         <div className="install-actions"><a className="text-link" href={repository} target="_blank" rel="noopener noreferrer">Explore the skill <Arrow diagonal/></a><a className="text-link" href={showcaseRepo} target="_blank" rel="noopener noreferrer">View showcase source <Arrow diagonal/></a></div>

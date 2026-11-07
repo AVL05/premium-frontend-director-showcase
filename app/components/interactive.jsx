@@ -2,6 +2,27 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Arrow } from './Arrow';
+import { motionSwitch, prefersReduced, setMotionSwitch, MOTION_EVENT } from './motion';
+
+// Pause control for all decorative motion (WCAG 2.2.2). The OS reduced-motion setting always wins.
+function MotionToggle() {
+  const [on, setOn] = useState(true);
+  const [forced, setForced] = useState(false);
+  useEffect(() => {
+    const sync = () => { setOn(motionSwitch()); setForced(prefersReduced()); };
+    sync();
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    window.addEventListener(MOTION_EVENT, sync);
+    mq.addEventListener('change', sync);
+    return () => { window.removeEventListener(MOTION_EVENT, sync); mq.removeEventListener('change', sync); };
+  }, []);
+  const active = on && !forced;
+  return <button type="button" className="motion-toggle" aria-pressed={active} disabled={forced}
+    title={forced ? 'Motion is reduced by your system setting' : active ? 'Turn motion off' : 'Turn motion on'}
+    onClick={() => setMotionSwitch(!on)}>
+    <span className="motion-dot" aria-hidden="true"/><span className="motion-label">Motion {active ? 'on' : 'off'}</span>
+  </button>;
+}
 
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -17,10 +38,12 @@ export function Header() {
     <button className="mobile-menu" type="button" aria-expanded={open} aria-controls="primary-nav" onClick={() => setOpen(v => !v)}>{open ? 'Close' : 'Menu'} <span aria-hidden="true">{open ? '×' : '+'}</span></button>
     <nav id="primary-nav" className={open ? 'navigation navigation--open' : 'navigation'} aria-label="Main navigation">
       <a onClick={close} href="#experience">Experience</a>
-      <a onClick={close} href="#philosophy">Philosophy</a>
-      <a onClick={close} href="#craft">The craft</a>
+      <a onClick={close} href="#process">Process</a>
+      <a onClick={close} href="#craft">Craft</a>
+      <a onClick={close} href="#standard">Gates</a>
       <a onClick={close} href="#install">Get the skill <Arrow diagonal/></a>
     </nav>
+    <MotionToggle/>
   </header>;
 }
 
@@ -41,7 +64,7 @@ export function CopyCommand({ command }) {
   }
   return <div className="install-command">
     <code ref={codeRef} translate="no">{command}</code>
-    <button type="button" onClick={copy}>{state === 'copied' ? 'Copied ✓' : state === 'failed' ? 'Command selected' : 'Copy command'}</button>
+    <button type="button" className="magnetic" onClick={copy}>{state === 'copied' ? 'Copied ✓' : state === 'failed' ? 'Command selected' : 'Copy command'}</button>
     <span className="visually-hidden" role="status">{state === 'copied' ? 'Command copied to clipboard' : state === 'failed' ? 'Copy failed. The command is now selected, so you can copy it with your keyboard.' : ''}</span>
   </div>;
 }
