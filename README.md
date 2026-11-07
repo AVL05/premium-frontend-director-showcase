@@ -1,8 +1,10 @@
 # Premium Frontend Director — The Art of Direction
 
-An independent, open-source showcase for [Premium Frontend Director](https://github.com/AVL05/premium-frontend-director).
+An independent, open-source showcase for [Premium Frontend Director](https://github.com/AVL05/premium-frontend-director), published at <https://the-art-of-direction.netlify.app>.
 
 **Creative thesis:** An editorial gallery that becomes a cinematic, interactive demonstration of deliberate frontend design. The website itself is the case study.
+
+**What a visitor gets:** the experience, the five-phase workflow and the 11 quality gates; a guide to choosing a tool profile (Core, Premium, Studio) and a creative ambition (Refined, Expressive, Immersive), which are independent choices; and install commands for Claude Code and Codex, a way to verify the installation, a first prompt for the chosen setup and the optional companions. The skill repository stays the source of truth: the content lives in `app/components/setup-data.js` and must be updated when the canonical docs change.
 
 ## Quick start
 
@@ -34,11 +36,17 @@ See [DESIGN.md](DESIGN.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), an
 
 ## Install the skill
 
+Use the guide on the site, or the canonical instructions: <https://github.com/AVL05/premium-frontend-director/blob/main/docs/getting-started.md>. The Core install, from the root of your own frontend project:
+
 ```bash
 npx skills add AVL05/premium-frontend-director --skill premium-frontend-director -a claude-code
 ```
 
-The CLI installer requires Node.js 22.20+; the skill itself is portable. Use project scope, and do not install a second native Claude plugin copy alongside the CLI version.
+Use `-a codex` for Codex. The installer needs Node.js 22.20+; the skill itself is portable. Use project scope, and do not install a second native Claude plugin copy alongside the CLI version.
+
+## Deployment
+
+The public address is set once in `app/site.js` (canonical URL, Open Graph, sitemap and robots). It is a static Next.js build with no environment variables.
 
 ## Project status
 

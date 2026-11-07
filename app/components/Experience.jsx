@@ -191,6 +191,10 @@ async function direct({ canvas, frontCanvas, state }) {
         { x: () => cinema().x, y: () => cinema().y, size: () => cinema().size, rot: 1.25, duration: .62, ease: 'power2.inOut' }, .08)
       .fromTo('.cinema .bar', { scaleY: 0 }, { scaleY: 1, duration: .34, ease: 'power3.out' }, .22)
       .fromTo('.frame-marks--night', { autoAlpha: 0 }, { autoAlpha: 1, duration: .16 }, .46)
+      // Without WebGL the SVG poster carries the scene: the paper sculpture leaves with the iris and the
+      // night one arrives with the title (both are display:none once the WebGL stage is live).
+      .to('.hero .ring-box', { autoAlpha: 0, duration: .2 }, .12)
+      .fromTo('.cinema .ring-box', { autoAlpha: 0 }, { autoAlpha: 1, duration: .2, ease: 'power3.out' }, .46)
       .fromTo('.cinema-title .t-kicker', { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: .22, ease: 'power3.out' }, .46)
       .from(cinemaSplit.chars, { yPercent: 112, duration: .26, stagger: .014, ease: 'power3.out' }, .5)
       .fromTo('.cinema-subtitle', { autoAlpha: 0 }, { autoAlpha: 1, duration: .16 }, .62)
@@ -228,8 +232,9 @@ async function direct({ canvas, frontCanvas, state }) {
     });
 
     // Disciplines: each drawing is drawn in by scroll.
-    gsap.utils.toArray('.discipline-art').forEach(art => {
-      gsap.fromTo(art, { '--p': 0 }, { '--p': 1, ease: 'none', scrollTrigger: scrub(art.closest('li'), { start: 'top 88%', end: 'center 50%' }) });
+    // The ambition diagrams in Setup are drawn the same way.
+    gsap.utils.toArray('.discipline-art, .ambition-art').forEach(art => {
+      gsap.fromTo(art, { '--p': 0 }, { '--p': 1, ease: 'none', scrollTrigger: scrub(art.closest('li, .choice'), { start: 'top 88%', end: 'center 55%' }) });
     });
 
     const mm = gsap.matchMedia();
@@ -277,7 +282,8 @@ async function direct({ canvas, frontCanvas, state }) {
         const reveal = gsap.timeline({ scrollTrigger: { trigger: take, containerAnimation: tl, start: 'left 62%', toggleActions: 'play none none reverse' } })
           .from(take.querySelector('.take-slate'), { autoAlpha: 0, x: 40, duration: .8, ease: 'expo.out' }, 0)
           .from(chars, { yPercent: 112, duration: 1.1, stagger: .035, ease: 'expo.out' }, .05)
-          .from(take.querySelector('.take-copy'), { autoAlpha: 0, y: 24, duration: 1, ease: 'expo.out' }, .3);
+          .from(take.querySelector('.take-copy'), { autoAlpha: 0, y: 24, duration: 1, ease: 'expo.out' }, .3)
+          .from(take.querySelector('.take-out'), { autoAlpha: 0, y: 16, duration: .9, ease: 'expo.out' }, .5);
         const meta = take.querySelectorAll('.take-meta li');
         if (meta.length) reveal.from(meta, { autoAlpha: 0, y: 16, duration: .8, stagger: .08, ease: 'expo.out' }, .45);
         // Parallax inside the take: the name travels slightly slower than its panel.
@@ -397,6 +403,21 @@ async function direct({ canvas, frontCanvas, state }) {
       return () => { items.forEach(el => el.classList.remove('is-active')); ol.style.removeProperty('--scan-x'); ol.style.removeProperty('--scan-y'); ol.style.removeProperty('--scan-h'); };
     });
 
+    // ======== 8c. Setup: the object leaves while the visitor chooses, and returns for the closing frame ========
+    // The choices are reading and deciding work, so nothing travels behind them. Ordered before the closing
+    // frame on purpose: on a jump to the end, the closing frame's opacity is applied last.
+    gsap.fromTo(state, { opacity: 1 }, {
+      opacity: 0, ease: 'none', immediateRender: false,
+      scrollTrigger: scrub('#setup', { start: 'top bottom', end: 'top 55%' }),
+    });
+    // Reveals: titles above; each group's labels, choices and rows rise as they enter.
+    gsap.utils.toArray('.chapter--setup .setup-group, .chapter--setup .independence').forEach(group => {
+      gsap.from(group.querySelectorAll('.reveal'), {
+        autoAlpha: 0, y: 26, duration: 1, stagger: .08, ease: 'expo.out',
+        scrollTrigger: { trigger: group, start: 'top 80%', once: true },
+      });
+    });
+
     // ======== 9. Closing frame: night returns, the object lands on "matter." ========
     // The anchor moves with the page, so the shot lands when the title is centred and then rides
     // the scroll 1:1 until the end of the page.
@@ -404,21 +425,24 @@ async function direct({ canvas, frontCanvas, state }) {
     const maxScroll = () => ScrollTrigger.maxScroll(window) - 1;
     const landAt = () => Math.min(close().docY - window.innerHeight * .5, maxScroll());
     gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: scrub('#install', { start: 'top bottom', end: () => landAt() }) })
-      .fromTo('.backdrop-night', { autoAlpha: 1, '--iris': '0px', '--ix': () => SHOTS.standard().x * 100 + '%', '--iy': () => SHOTS.standard().y * 100 + '%' },
-        // autoAlpha is repeated in the end values: the Craft portal hides the night layer, and a jump
-        // straight to the end (Install CTA, End key, reload near the bottom) never renders this
-        // tween's start, which left light text on the paper backdrop.
+      .fromTo('.backdrop-close', { autoAlpha: 1, '--iris': '0px', '--ix': () => SHOTS.standard().x * 100 + '%', '--iy': () => SHOTS.standard().y * 100 + '%' },
+        // The closing frame has its own night layer: ScrollTrigger re-renders every timeline in creation order on a
+        // refresh (resize, fonts, a new layout), and this one starts closed, which would otherwise have
+        // overwritten the opening night layer while the visitor was in Process. autoAlpha is repeated in the end
+        // values so a jump straight to the end (Install CTA, End key, reload near the bottom) still shows it.
         { '--iris': fullIris, autoAlpha: 1, ease: 'power2.in', immediateRender: false }, 0)
       .fromTo(state, { ...at('standard'), solid: 0, wire: .55, night: 0 }, {
         x: () => close().x, y: () => (close().docY - landAt()) / window.innerHeight, size: () => close().size,
         solid: 1, wire: 0, night: 1, ease: 'power2.inOut', immediateRender: false,
-      }, 0);
+      }, 0)
+      // The object was hidden through Setup: it comes back as the night opens.
+      .fromTo(state, { opacity: 0 }, { opacity: 1, duration: .2, ease: 'none', immediateRender: false }, 0);
     gsap.fromTo(state, { y: () => (close().docY - landAt()) / window.innerHeight }, {
       y: () => (close().docY - maxScroll()) / window.innerHeight, ease: 'none', immediateRender: false,
       scrollTrigger: { start: () => landAt(), end: () => maxScroll(), scrub: true, invalidateOnRefresh: true },
     });
-    gsap.from('.chapter--install > :is(.chapter-lede,.install-command,.install-actions)', {
-      autoAlpha: 0, y: 30, duration: 1, stagger: .1, ease: 'expo.out', scrollTrigger: { trigger: '.chapter--install .chapter-lede', start: 'top 90%', once: true },
+    gsap.utils.toArray('.chapter--install .install-reveal').forEach(el => {
+      gsap.from(el, { autoAlpha: 0, y: 30, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 90%', once: true } });
     });
 
     // ======== Viewfinder cursor (fine pointers only; the native cursor stays) ========
@@ -467,6 +491,11 @@ async function direct({ canvas, frontCanvas, state }) {
   const syncLenis = () => lenis.resize();
   ScrollTrigger.addEventListener('refresh', syncLenis);
   cleanups.push(() => ScrollTrigger.removeEventListener('refresh', syncLenis));
+  // The Setup guide changes the page height when a choice or a disclosure changes: re-measure.
+  let relayoutFrame = 0;
+  const relayout = () => { cancelAnimationFrame(relayoutFrame); relayoutFrame = requestAnimationFrame(() => ScrollTrigger.refresh()); };
+  window.addEventListener('pfd-layout', relayout);
+  cleanups.push(() => { window.removeEventListener('pfd-layout', relayout); cancelAnimationFrame(relayoutFrame); });
   ScrollTrigger.refresh();
   // Fonts change the measured anchors.
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
@@ -510,7 +539,7 @@ export default function Experience() {
   }, []);
 
   return <>
-    <div className="backdrop" aria-hidden="true"><div className="backdrop-night"/><div className="backdrop-day"/></div>
+    <div className="backdrop" aria-hidden="true"><div className="backdrop-night"/><div className="backdrop-close"/><div className="backdrop-day"/></div>
     <canvas ref={canvasRef} className="stage" aria-hidden="true"/>
     <StageOverlay/>
     <canvas ref={frontRef} className="stage-front" aria-hidden="true"/>

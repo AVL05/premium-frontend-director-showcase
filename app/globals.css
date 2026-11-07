@@ -195,19 +195,124 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 .chapter--standard .t-word::after{content:'';position:absolute;top:-.04em;bottom:-.04em;left:calc(var(--wipe) * 1%);width:.05em;background:var(--signal);opacity:var(--bar);pointer-events:none}
 
 /* Closing frame: the cinema world returns, the sculpture's last appearance. */
-.chapter--install{min-height:100svh;background:var(--cinema);color:var(--paper);overflow:hidden;isolation:isolate;padding-top:calc(var(--bar) + clamp(72px,12svh,140px));padding-bottom:clamp(56px,9svh,96px);--line:var(--line-light)}
-.chapter--install .chapter-title{margin-bottom:clamp(32px,5svh,64px)}
-.chapter--install .install-command,.chapter--install .install-actions{margin-top:clamp(28px,5svh,56px)}
+.chapter--install{min-height:100svh;background:var(--cinema);color:var(--paper);overflow:hidden;isolation:isolate;padding-top:calc(var(--bar) + clamp(40px,6svh,80px));padding-bottom:clamp(56px,9svh,96px);--line:var(--line-light)}
+.chapter--install .chapter-title{margin-bottom:clamp(24px,3.6svh,44px)}
 .chapter--install::before{left:0;right:0;border:0;height:var(--bar);background:var(--matte)}
 .frame-marks--install{inset:calc(var(--bar) + 12px) calc(var(--gutter) - 14px) 14px;color:rgba(243,240,233,.5)}
 .chapter--install .chapter-lede{color:#e7e3da}
 .chapter--install>:not(.chapter-title,.frame-marks){position:relative;z-index:1}
-.install-command{margin-top:clamp(40px,7svh,72px);max-width:980px;border:1px solid #575954;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 20px 20px 24px;background:rgba(16,19,21,.6)}
-.install-command code{font-family:var(--mono);font-size:clamp(12px,1.2vw,15px);overflow-wrap:break-word;line-height:1.6;min-width:0}
+/* Process: what each take leaves behind. */
+.take-out{margin:clamp(18px,3svh,28px) 0 0;display:flex;gap:12px;align-items:baseline;max-width:36ch;font-size:14px;line-height:1.4;color:#e7e3da}
+.take-out span{flex:none;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--rim)}
+
+/* ============ Setup: profile and ambition are two independent choices ============ */
+.chapter--setup .chapter-title{margin-bottom:clamp(28px,5svh,56px)}
+.setup-group{margin-top:clamp(56px,10svh,110px)}
+.setup-label{display:grid;grid-template-columns:auto 1fr;column-gap:16px;row-gap:6px;align-items:baseline;margin-bottom:clamp(20px,3.5svh,36px)}
+.setup-label span{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.setup-label h3{margin:0;font-family:var(--display);font-weight:900;font-variation-settings:'wdth' 62;text-transform:uppercase;letter-spacing:var(--track-display);line-height:.9;font-size:clamp(34px,4.2vw,68px)}
+.setup-label p{grid-column:2;margin:0;max-width:52ch;color:var(--muted);font-size:clamp(16px,1.2vw,19px);line-height:1.45}
+
+.choices{border:0;margin:0;padding:0;min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
+.choice{position:relative;display:block;cursor:pointer}
+.choices .choice+.choice{border-left:1px solid var(--line)}
+.choice-input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:1}
+.choices .choice-body{position:relative;display:flex;flex-direction:column;gap:14px;height:100%;padding:clamp(20px,2.4vw,34px) clamp(18px,2vw,32px) clamp(22px,2.6vw,34px);border-bottom:1px solid var(--line);transition:background-color .3s}
+.choices .choice-body::before{content:'';position:absolute;top:-1px;left:0;right:0;height:3px;background:var(--signal);transform:scaleX(0);transform-origin:left;transition:transform .55s var(--ease-out)}
+.choices .choice.is-selected .choice-body{background:rgba(23,24,23,.055)}
+.choices .choice.is-selected .choice-body::before{transform:scaleX(1)}
+@media(hover:hover){.choices .choice:not(.is-selected):hover .choice-body{background:rgba(23,24,23,.03)}}
+.choice-input:focus-visible+.choice-body{outline:3px solid var(--signal);outline-offset:-3px}
+.choice-tag{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.choice-name{font-family:var(--display);font-weight:900;font-variation-settings:'wdth' 62;text-transform:uppercase;letter-spacing:var(--track-display);line-height:.85;font-size:clamp(48px,6.2vw,108px)}
+.choice-name b{font-weight:inherit;color:var(--signal)}
+.choice-copy{font-size:clamp(16px,1.25vw,19px);line-height:1.5}
+.choice-fit{color:var(--muted);font-size:15px;line-height:1.5}
+.choice-fit strong{color:var(--ink)}
+.choice-state{margin-top:auto;padding-top:6px;display:flex;align-items:center;gap:9px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.choice-state i{width:12px;height:12px;border:1.5px solid currentColor;border-radius:50%;transition:background-color .25s,border-color .25s}
+.choice.is-selected .choice-state i{background:var(--signal);border-color:var(--signal)}
+.ambition-art{--p:1;display:block;width:100%;max-width:230px;height:auto;color:var(--ink);overflow:visible;margin-bottom:6px}
+
+/* What each tool contributes. Rows in the chosen profile are marked; the others stay readable. */
+.ledger{margin-top:clamp(40px,7svh,72px)}
+.ledger-title{margin:0 0 18px;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.ledger-title span{display:block;margin-top:8px;max-width:62ch;font-weight:400;letter-spacing:0;text-transform:none;font-size:16px;line-height:1.45;color:var(--muted)}
+.ledger-list{list-style:none;margin:0;padding:0}
+.ledger-group{padding:26px 0 10px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.ledger-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);gap:clamp(14px,2.4vw,40px);padding:15px 0 15px 16px;border-top:1px solid var(--line);align-items:baseline;font-size:15px;line-height:1.5;color:var(--muted);transition:color .35s}
+.ledger-row.is-in{color:var(--ink)}
+.ledger-row::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;background:var(--signal);transform:scaleY(0);transform-origin:top;transition:transform .45s var(--ease-out)}
+.ledger-row.is-in::before{transform:scaleY(1)}
+.ledger-name{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;font-size:17px;font-weight:700;color:inherit}
+.ledger-name a{border-bottom:1px solid currentColor}
+.ledger-role{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;border:1px solid currentColor;padding:2px 7px;white-space:nowrap}
+.ledger-role--required{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.ledger-note{margin:18px 0 0;max-width:72ch;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:15px;line-height:1.55}
+
+.independence{margin-top:clamp(64px,11svh,120px);padding-top:clamp(32px,5svh,56px);border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:var(--gutter);align-items:center}
+.independence h3{margin:0 0 22px;font-family:var(--display);font-weight:900;font-variation-settings:'wdth' 62;text-transform:uppercase;letter-spacing:var(--track-display);line-height:.88;font-size:clamp(40px,5.2vw,88px)}
+.independence p{margin:0;max-width:48ch;font-size:clamp(17px,1.35vw,21px);line-height:1.5}
+.independence p.independence-pick{display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;margin-top:30px;max-width:none}
+.independence-pick>span:first-child{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.independence-pick strong{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(22px,2vw,32px);line-height:1}
+.matrix{display:grid;grid-template-columns:minmax(58px,auto) repeat(3,minmax(0,1fr));gap:6px;width:100%;max-width:440px;justify-self:end}
+.matrix-row{display:contents}
+.matrix-head{align-self:center;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.matrix>.matrix-head{text-align:center}
+.matrix-cell{aspect-ratio:1.55;border:1px solid var(--line);transition:background-color .4s,border-color .4s}
+.matrix-cell.is-on{background:var(--signal);border-color:var(--signal)}
+
+/* ============ Install: agent, commands, check, first brief, companions ============ */
+.install-intro{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:var(--gutter);align-items:end}
+.install-pick{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
+.agents{border:0;margin:0;padding:0;min-width:0}
+.agents legend{padding:0;margin-bottom:10px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#bdb9b0}
+.agent-options{display:inline-flex;border:1px solid #575954}
+.agent+.agent{border-left:1px solid #575954}
+.agent .choice-body{display:flex;align-items:center;min-height:48px;padding:0 26px;font-size:15px;font-weight:600;transition:background-color .25s,color .25s}
+.agent.is-selected .choice-body{background:var(--paper);color:var(--ink)}
+.agent .choice-input:focus-visible+.choice-body{outline:3px solid #f08a72;outline-offset:-3px}
+.agent.is-selected .choice-input:focus-visible+.choice-body{outline-color:var(--signal)}
+.install-setup{margin:0;font-size:14px;color:#d5d1c8}
+.install-setup strong{color:var(--paper)}
+.install-setup a{margin-left:8px;text-decoration:underline;text-underline-offset:4px}
+
+.guide{list-style:none;margin:clamp(24px,4svh,40px) 0 0;padding:0;max-width:1080px}
+.guide-step{display:grid;grid-template-columns:clamp(56px,6.5vw,104px) minmax(0,1fr);gap:clamp(12px,2vw,32px);padding:clamp(22px,3.4svh,40px) 0;border-top:1px solid var(--line-light)}
+.guide-n{font-family:var(--display);font-weight:900;font-variation-settings:'wdth' 62;line-height:.85;font-size:clamp(44px,5.4vw,92px);color:var(--rim)}
+.guide-body{min-width:0}
+.guide-body h3{margin:0 0 12px;font-family:var(--display);font-weight:800;text-transform:uppercase;line-height:1;font-size:clamp(26px,2.5vw,40px)}
+.guide-body p{margin:0 0 14px;max-width:66ch;color:#e7e3da;font-size:clamp(16px,1.2vw,18px);line-height:1.55}
+.guide-body code{font-family:var(--mono);font-size:.9em;color:#fff;overflow-wrap:anywhere}
+.guide-body p a,.more a{text-decoration:underline;text-underline-offset:4px}
+.guide-body .guide-note{color:#d5d1c8;font-size:15px;margin-top:16px}
+.guide-notes{margin:18px 0 0;padding-left:1.15em;max-width:66ch;color:#e7e3da;font-size:15px;line-height:1.55}
+.guide-notes li+li{margin-top:6px}
+.guide-notes code{white-space:nowrap}
+
+.copy-block{position:relative;margin:16px 0 0;max-width:980px;border:1px solid #575954;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 18px 18px 22px;background:rgba(16,19,21,.6)}
+.copy-block+.copy-block{margin-top:12px}
+.copy-block code,.copy-block pre{margin:0;min-width:0;font-family:var(--mono);font-size:clamp(12px,1.2vw,15px);line-height:1.6;overflow-wrap:break-word;color:var(--paper)}
+.copy-block pre{white-space:pre-wrap}
+.copy-block--prompt{align-items:flex-start}
+.copy-block button{flex:none;border:1px solid #8b8c87;background:transparent;color:var(--paper);min-height:44px;padding:0 18px;white-space:nowrap;cursor:pointer;transition:background-color .2s,color .2s}
+.copy-block button:hover{background:var(--paper);color:var(--ink)}
 .cmd-token{white-space:nowrap}
-.install-command button{border:1px solid #8b8c87;background:transparent;color:var(--paper);min-height:44px;padding:0 18px;white-space:nowrap;cursor:pointer;transition:background .2s,color .2s}
-.install-command button:hover{background:var(--paper);color:var(--ink)}
-.install-actions{display:flex;flex-wrap:wrap;gap:16px 48px;margin-top:clamp(40px,7svh,72px)}
+
+.more{margin-top:20px;border-top:1px solid var(--line-light)}
+.more+.more{margin-top:0}
+.more summary{display:flex;align-items:center;gap:14px;min-height:52px;cursor:pointer;list-style:none;font-weight:600;font-size:16px;color:var(--paper)}
+.more summary::-webkit-details-marker{display:none}
+.more summary::before{content:'+';flex:none;width:22px;font-family:var(--mono);font-size:20px;color:var(--rim)}
+.more[open]>summary::before{content:'\2212'}
+.more>:not(summary){margin-left:36px}
+.companions{list-style:none;padding:0;margin-bottom:6px}
+.companions li{padding:14px 0 18px;border-top:1px solid var(--line-light)}
+.companions li:first-child{border-top:0;padding-top:4px}
+.companions p span{display:block;margin-top:4px;color:#d5d1c8;font-size:15px}
+.companions .copy-block{margin-top:2px}
+.install-actions{display:flex;flex-wrap:wrap;gap:16px 48px;margin-top:clamp(28px,5svh,48px);padding-top:clamp(24px,4svh,36px);border-top:1px solid var(--line-light);max-width:1080px}
 .footer{position:relative;z-index:2;padding:30px var(--gutter);background:var(--matte);color:#bdb9b0;display:flex;justify-content:space-between;gap:20px;font-size:12px;letter-spacing:.04em}
 .footer a{text-decoration:underline;text-underline-offset:4px;min-height:24px}
 .footer a:focus-visible{outline-color:#f08a72}
@@ -218,7 +323,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 .backdrop,.stage,.grain{position:fixed;inset:0;pointer-events:none}
 .backdrop{z-index:0;background:var(--paper);display:none}
 /* Night is graded like a frame: a lifted centre, a cool-black vignette at the edges. */
-.backdrop-night{--iris:0px;--ix:70%;--iy:50%;position:absolute;inset:0;background:radial-gradient(ellipse 85% 85% at 50% 50%,transparent 55%,rgba(2,4,6,.7)),radial-gradient(ellipse 55% 60% at 70% 50%,#1b1e20,transparent 72%),var(--cinema);clip-path:circle(var(--iris) at var(--ix) var(--iy));visibility:hidden}
+.backdrop-night,.backdrop-close{--iris:0px;--ix:70%;--iy:50%;position:absolute;inset:0;background:radial-gradient(ellipse 85% 85% at 50% 50%,transparent 55%,rgba(2,4,6,.7)),radial-gradient(ellipse 55% 60% at 70% 50%,#1b1e20,transparent 72%),var(--cinema);clip-path:circle(var(--iris) at var(--ix) var(--iy));visibility:hidden}
 /* The paper world seen through the ring during the portal. */
 .backdrop-day{--day:0px;--dx:50%;--dy:50%;position:absolute;inset:0;background:var(--paper);clip-path:circle(var(--day) at var(--dx) var(--dy));visibility:hidden}
 .stage{z-index:1;width:100%;height:100%;display:none}
@@ -301,6 +406,19 @@ html.lenis{scroll-behavior:auto}
 /* ============ Responsive ============ */
 .navigation a{white-space:nowrap}
 @media(max-width:1100px){.standard-grid{grid-template-columns:1fr}.standard-copy{position:static}}
+@media(max-width:1100px){
+  .choices{grid-template-columns:1fr}
+  .choices .choice+.choice{border-left:0}
+  .choices .choice-body{display:grid;grid-template-columns:minmax(0,.55fr) minmax(0,1fr);column-gap:clamp(18px,4vw,48px);row-gap:10px;align-content:start}
+  .choices .choice-body>*{grid-column:2}
+  .choices .choice-body>.choice-name,.choices .choice-body>.ambition-art,.choices .choice-body>.choice-tag{grid-column:1}
+  .choices .choice-body>.choice-name{grid-row:1/span 3}
+  .choices .choice-body>.ambition-art{grid-row:1/span 4;align-self:start}
+  .ledger-row{grid-template-columns:1fr;gap:6px}
+  .independence{grid-template-columns:1fr}
+  .matrix{justify-self:start}
+  .install-intro{grid-template-columns:1fr;gap:24px}
+}
 @media(max-width:1000px){
   /* The toggle keeps its text for assistive tech; visually it becomes the dot alone. */
   .motion-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -343,8 +461,16 @@ html.lenis{scroll-behavior:auto}
   .session-log li+li{margin-top:8px}
   .gates{columns:1}
   .chapter--install .ring-box{--ring:3.4em}
-  .install-command{flex-direction:column;align-items:stretch;padding:18px}.install-command button{align-self:flex-start}
+  .copy-block{flex-direction:column;align-items:stretch;gap:14px;padding:16px}.copy-block button{align-self:flex-start}
   .install-actions{flex-direction:column;align-items:flex-start}
+  .choices .choice-body{display:flex;flex-direction:column;gap:12px}
+  .choices .choice-body>*{grid-column:auto;grid-row:auto}
+  .ambition-art{max-width:190px}
+  .agent-options{display:flex;width:100%}.agent{flex:1}.agent .choice-body{justify-content:center}
+  .guide-step{grid-template-columns:1fr;gap:8px}
+  .guide-n{font-size:48px}
+  .more>:not(summary){margin-left:0}
+  .agent .choice-body{padding:0 22px}
   .footer{flex-wrap:wrap;line-height:1.6}.footer span:nth-child(2){display:none}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}

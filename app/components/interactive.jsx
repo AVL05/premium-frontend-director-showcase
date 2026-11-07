@@ -66,36 +66,50 @@ export function Header() {
     <nav id="primary-nav" className={open ? 'navigation navigation--open' : 'navigation'} aria-label="Main navigation">
       <a onClick={close} href="#experience">Experience</a>
       <a onClick={close} href="#process">Process</a>
-      <a onClick={close} href="#craft">Craft</a>
       <a onClick={close} href="#standard">Gates</a>
+      <a onClick={close} href="#setup">Setup</a>
       <a onClick={close} href="#install">Get the skill <Arrow diagonal/></a>
     </nav>
     <MotionToggle/>
   </header>;
 }
 
-export function CopyCommand({ command }) {
-  const [state, setState] = useState('idle');
+// A command or a prompt with a reliable copy button. kind 'command' keeps each argument whole when the line
+// wraps (a flag never splits); 'prompt' keeps the line breaks. The text, and so what is selected and copied, is unchanged.
+export function CopyBlock({ text, kind = 'command', label, magnetic = false }) {
+  // The result belongs to the text it was produced for: a new text (another agent or setup) is a new thing to copy.
+  const [done, setDone] = useState({ text: null, state: 'idle' });
+  const state = done.text === text ? done.state : 'idle';
+  const setState = s => setDone({ text, state: s });
   const codeRef = useRef(null);
+  const timer = useRef(0);
+  useEffect(() => () => clearTimeout(timer.current), []);
   async function copy() {
-    try { await navigator.clipboard.writeText(command); setState('copied'); return; }
-    catch { /* Clipboard API refused or unavailable (permissions, insecure context): fall back below. */ }
-    // Select the command, then try the legacy copy; if that is refused too it stays selected for a manual copy.
-    const range = document.createRange();
-    range.selectNodeContents(codeRef.current);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch { /* keep the selection */ }
-    setState(ok ? 'copied' : 'failed');
+    clearTimeout(timer.current);
+    let result = 'failed';
+    try { await navigator.clipboard.writeText(text); result = 'copied'; }
+    catch {
+      // Clipboard API refused or unavailable (permissions, insecure context): select the text, then try the legacy copy.
+      const range = document.createRange();
+      range.selectNodeContents(codeRef.current);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      try { if (document.execCommand('copy')) result = 'copied'; } catch { /* keep the selection */ }
+    }
+    setState(result);
+    if (result === 'copied') timer.current = window.setTimeout(() => setState('idle'), 2600);
   }
-  // Each argument stays whole when the command wraps (a flag never splits across lines);
-  // the text, and so what is selected and copied, is unchanged.
-  const tokens = command.split(' ');
-  return <div className="install-command">
-    <code ref={codeRef} translate="no">{tokens.map((t, i) => <Fragment key={i}>{i > 0 && ' '}<span className="cmd-token">{t}</span></Fragment>)}</code>
-    <button type="button" className="magnetic" onClick={copy}>{state === 'copied' ? 'Copied ✓' : state === 'failed' ? 'Command selected' : 'Copy command'}</button>
-    <span className="visually-hidden" role="status">{state === 'copied' ? 'Command copied to clipboard' : state === 'failed' ? 'Copy failed. The command is now selected, so you can copy it with your keyboard.' : ''}</span>
+  const noun = kind === 'command' ? 'command' : 'prompt';
+  const body = kind === 'command'
+    ? <code ref={codeRef} translate="no">{text.split(' ').map((t, i) => <Fragment key={i}>{i > 0 && ' '}<span className="cmd-token">{t}</span></Fragment>)}</code>
+    : <pre ref={codeRef} className="prompt-text">{text}</pre>;
+  return <div className={'copy-block copy-block--' + kind}>
+    {body}
+    <button type="button" className={magnetic ? 'magnetic' : undefined} onClick={copy}>
+      {state === 'copied' ? 'Copied ✓' : state === 'failed' ? (kind === 'command' ? 'Command selected' : 'Prompt selected') : 'Copy ' + noun}
+      <span className="visually-hidden"> {label}</span>
+    </button>
+    <span className="visually-hidden" role="status">{state === 'copied' ? `${label}: copied to clipboard` : state === 'failed' ? `Copy failed. The ${noun} is now selected, so you can copy it with your keyboard.` : ''}</span>
   </div>;
 }

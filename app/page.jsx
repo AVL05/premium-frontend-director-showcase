@@ -1,11 +1,12 @@
 import Sculpture from './components/Sculpture';
 import { Arrow } from './components/Arrow';
-import { Header, CopyCommand } from './components/interactive';
+import { Header } from './components/interactive';
 import Experience from './components/Experience';
+import Setup from './components/Setup';
+import { FrameMarks, Monument } from './components/shared';
+import { DOCS } from './components/setup-data';
 
-const repository = 'https://github.com/AVL05/premium-frontend-director';
-const showcaseRepo = 'https://github.com/AVL05/premium-frontend-director-showcase';
-const gatesUrl = repository + '/blob/main/skills/premium-frontend-director/references/quality-gates.md';
+const gatesUrl = DOCS.gates;
 // Gate names and the evidence each one asks for, from the skill's references/quality-gates.md.
 const gates = [
   ['G1', 'Design brief', 'Audience, goal, the chosen creative thesis, a content plan and its trade-offs.'],
@@ -27,18 +28,17 @@ const disciplines = [
   ['Frontend engineering', 'Production-minded components, semantic markup and intentional interactions.', 'build'],
   ['Visual proof', 'Real browser inspection, device coverage and explicit quality gates. No imaginary scores.', 'prove'],
 ];
-// The five phases of the skill's workflow (SKILL.md, "Workflow"), one take each.
+// The five phases of the skill's workflow (SKILL.md, "Workflow"), one take each, with what each one leaves behind.
 const takes = [
-  ['Discover', 'Read the project before touching it: routes, tokens, fonts, assets, constraints and the ambition the brief really asks for.'],
-  ['Direct', 'Three experientially distinct directions, one chosen with reasons, and a signature moment that can be verified.'],
-  ['Document', 'A DESIGN.md with tokens, states, motion and acceptance criteria. The system is written down before it is built.'],
-  ['Build', 'Vertical slices. For ambitious work the defining viewport is prototyped first, reviewed, and only then scaled.'],
-  ['Prove', 'Real browsers at 375, 768, 1440 and 1920. Every gate is reported as pass, fail or not run.'],
+  ['Discover', 'Read the project before touching it: routes, tokens, fonts, assets, constraints and the ambition the brief really asks for.', 'Your constraints, scoped and written down'],
+  ['Direct', 'Three experientially distinct directions, one chosen with reasons, and a signature moment that can be verified.', 'A creative brief with one chosen direction'],
+  ['Document', 'A DESIGN.md with tokens, states, motion and acceptance criteria. The system is written down before it is built.', 'DESIGN.md in your project'],
+  ['Build', 'Vertical slices in your existing stack. For ambitious work the defining viewport is prototyped first, reviewed, and only then scaled.', 'A working implementation, not a mockup'],
+  ['Prove', 'Real browsers at 375, 768, 1440 and 1920, when browser tooling is available. Every gate is reported as pass, fail or not run.', 'Gate results with evidence'],
 ];
 // The three directions actually considered for this site (DESIGN.md).
 const directions = [['A', 'Motion lab', false], ['B', 'The continuous take', true], ['C', 'Type tunnel', false]];
 const kinetic =['Composition', 'Rhythm', 'Contrast', 'Light', 'Motion', 'Proof'];
-const installCommand = 'npx skills add AVL05/premium-frontend-director --skill premium-frontend-director -a claude-code';
 const prompt = 'Use $premium-frontend-director to redesign this frontend. Audit the current repository, select a creative ambition mode, propose three brand-appropriate directions, prototype the defining moment, implement one coherent system, review actual desktop and mobile rendering, and report objective quality gates.';
 const sessionLines = [
   ['Discover', 'framework, routes, tokens, fonts and assets inventoried'],
@@ -48,10 +48,6 @@ const sessionLines = [
   ['Prove', '375 · 768 · 1440 · 1920 reviewed in a real browser'],
   ['Report', 'G1–G11, each pass, fail or not run, with evidence'],
 ];
-
-function FrameMarks({ className }) {
-  return <span className={'frame-marks ' + className} aria-hidden="true"><i/><i/><i/><i/></span>;
-}
 
 // A drawing per discipline, stroked so it can be drawn in by scroll (--p, 0..1; static: drawn).
 // compose: a frame, its thirds and the focal point. build: a layout resolving into components.
@@ -77,13 +73,6 @@ function DisciplineArt({ kind }) {
   return <svg className={'discipline-art discipline-art--' + kind} viewBox="0 0 240 150" aria-hidden="true">{art}</svg>;
 }
 
-function Monument({ id, kicker, word, fit, className = 'chapter-title', children }) {
-  return <h2 id={id} className={className} style={fit ? { '--fit': fit } : undefined}>
-    <span className="t-kicker">{kicker}</span>
-    <span className="t-word"><span className="t-text">{word}<b>.</b></span>{children}</span>
-  </h2>;
-}
-
 export default function Home() {
   // header and footer sit outside <main> so they keep their banner and contentinfo landmarks.
   return <div id="top">
@@ -107,7 +96,7 @@ export default function Home() {
               </span>
             </h1>
             <div className="hero-base">
-              <p className="hero-lede">Premium Frontend Director teaches coding agents to art-direct a frontend, build it, and prove it in a real browser against 11 named quality gates.</p>
+              <p className="hero-lede">Premium Frontend Director is an open-source Agent Skill for Claude Code, Codex and compatible agents. It guides them to art-direct a frontend, build it, and prove it in a real browser against 11 named quality gates.</p>
               <div className="hero-actions">
                 <a className="button magnetic" href="#install">Install the skill</a>
                 <a className="text-link" href="#experience">Enter the scene <Arrow down/></a>
@@ -138,10 +127,11 @@ export default function Home() {
             <Monument id="process-title" kicker="From noise" word="to form" fit={5}/>
             <p className="chapter-lede">Not another prompt for prettier buttons. A disciplined workflow that takes a project from raw material to a directed, proven experience, in five takes.</p>
           </div>
-          {takes.map(([name, copy], i) => <article className="take" key={name} aria-labelledby={'take-' + i}>
+          {takes.map(([name, copy, out], i) => <article className="take" key={name} aria-labelledby={'take-' + i}>
             <p className="take-slate"><span>Take {String(i + 1).padStart(2, '0')}</span><span aria-hidden="true">/ 05</span></p>
             <h3 id={'take-' + i} className="take-name">{name}<b>.</b></h3>
             <p className="take-copy">{copy}</p>
+            <p className="take-out"><span>You get</span>{out}</p>
             {name === 'Direct' && <ul className="take-meta" aria-label="The three directions considered for this site">
               {directions.map(([id, label, chosen]) => <li key={id} className={chosen ? 'is-chosen' : undefined}>
                 <span>{id}</span>{label}<em>{chosen ? 'Chosen' : 'Set aside'}</em>
@@ -210,15 +200,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="chapter chapter--install" id="install" aria-labelledby="install-title">
-        <FrameMarks className="frame-marks--install"/>
-        <Monument id="install-title" kicker="Make something" word="matter" fit={4.2}>
-          <span className="ring-box ring-box--close"><Sculpture className="ring-svg" variant="night"/></span>
-        </Monument>
-        <p className="chapter-lede">Install the skill and give your next frontend project a point of view. Open source under MIT, compatible with Claude Code and Codex.</p>
-        <CopyCommand command={installCommand}/>
-        <div className="install-actions"><a className="text-link" href={repository} target="_blank" rel="noopener noreferrer">Explore the skill <Arrow diagonal/></a><a className="text-link" href={showcaseRepo} target="_blank" rel="noopener noreferrer">View showcase source <Arrow diagonal/></a></div>
-      </section>
+      <Setup/>
     </main>
     <footer className="footer"><span>© {new Date().getFullYear()} Premium Frontend Director</span><span>An independent open-source showcase</span><a href="#top">Back to top <span aria-hidden="true">↑</span></a></footer>
   </div>;

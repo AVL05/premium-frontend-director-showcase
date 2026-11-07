@@ -3,7 +3,7 @@
 ## Product context
 - **Product:** Premium Frontend Director Showcase.
 - **Audience:** developers, designers, maintainers of coding agents, creative technologists.
-- **Primary user goal:** feel what a directed frontend can be, understand the skill's workflow, install it.
+- **Primary user goal:** feel what a directed frontend can be, understand the skill's workflow and its configurations, install exactly what they need, verify it and write a first brief.
 - **Promise:** art direction, frontend engineering, visual proof.
 - **Source of truth:** https://github.com/AVL05/premium-frontend-director
 - **Skill profile:** Premium (companions present in `.claude/skills`: design-taste-frontend, impeccable, ui-ux-pro-max, web-design-guidelines).
@@ -40,7 +40,10 @@ No ambient particle wallpaper (points exist only as a state of the object), no p
 | Process | What does the skill do? | Five phases in a horizontal take | Horizontal pin, noise → form morph |
 | Craft | Is the detail real? | Kinetic line of the disciplines | Velocity-driven variable font, line reveals |
 | Standard | Can I trust the process? | The 11 real gate names; G11 as a monument | Staggered reveal, scan line |
-| Install | Can I use it? | Illustrative session, copy command, the object's last appearance | Typed terminal, magnetic button |
+| Setup | What do I need, and which setup fits? | Two independent choices: tool profile (Core, Premium, Studio) and creative ambition (Refined, Expressive, Immersive); a ledger of what each tool contributes; the 3 × 3 of valid pairings | Radio cards, drawn-in ambition diagrams, the object leaves while the visitor decides |
+| Install | How do I install and use it? | Closing frame, then a guide: agent, install command, verification, a first prompt for the chosen setup, optional companions, docs | Object returns on "matter.", magnetic copy button |
+
+Journey: Experience (opening to Craft) → Understand (Process, Session, Standard) → Configure (Setup) → Install → Use. The header's "Get the skill" and the hero button jump straight to Install, so nobody has to sit through the animations; Install shows the chosen setup with a "Change" link back to Setup.
 
 ## Design tokens
 ### Palette
@@ -64,7 +67,10 @@ No ambient particle wallpaper (points exist only as a state of the object), no p
 - Landmarks: `header`, `main#content`, `footer` are siblings, so each keeps its landmark role.
 - Stage: fixed `<canvas aria-hidden>` behind content; never holds content or controls.
 - Poster: the original SVG sculpture renders in the hero until WebGL is ready, and stays as the fallback.
-- Install command: copy with announced status; on failure the command is selected.
+- Copy blocks (`CopyBlock`): a command or a prompt with a copy button, an announced status, a legacy-copy fallback and, if that fails too, the text left selected. Commands wrap at spaces only.
+- Choices (`Setup.jsx`): native radio groups in a `fieldset`, so arrow keys, focus and form semantics come for free; the short label is the accessible name, the card text its description. Choices only change what is highlighted or generated: every profile, ambition and companion stays readable on the page, which is also what a static or no-JS render shows.
+- Content for Setup and Install lives in `app/components/setup-data.js` and mirrors the canonical skill repository (README, `docs/getting-started.md`, `docs/companion-profiles.md`, `references/dependencies.md`, `references/ambition-modes.md`). Commands are generated per agent (Claude Code, Codex); where no single command is verified the entry links to the upstream docs.
+- The closing frame has its own night layer (`.backdrop-close`), so a ScrollTrigger refresh cannot overwrite the opening one.
 - Session: illustrative transcript, labelled as such, typed when it enters the viewport; full text present in the DOM from the start.
 
 ## Motion and technology
@@ -151,9 +157,30 @@ Checks run: `npm run lint` clean, `npm run build` succeeds, no console errors, n
 
 Not run or not verifiable here: the install command itself (`npx skills add …` would install files); frame rate and Lighthouse (the pane renders WebGL in software, so timings would be meaningless); screen-reader pass; OS-level reduced-motion emulation.
 
-**Open before publishing:** the showcase repository is private, so the "View showcase source" link answers 404 to the public. Make the repository public, or remove that link, before deploying.
-
 Known and left as is: on narrow screens the blueprint wireframe passes behind the gate list while travelling to the closing frame (a few hundred pixels of scroll, text stays readable).
+
+## Release pass: setup and installation (2026-11-07)
+The showcase became the place to discover, configure and install the skill, without touching the cinematic direction.
+
+- **Added:** the Setup chapter (profile, ambition, tool ledger, independence matrix) and a full Install guide (agent, command, verification, first prompt generated from the chosen setup, companions, docs). Process takes now state what each leaves behind. The hero says what the product is in one sentence.
+- **Navigation:** Experience, Process, Gates, Setup and "Get the skill".
+- **Honest claims:** the Prove take and the guide say browser checks need browser tooling and are otherwise reported NOT RUN; the guide says the skill does not guarantee a result and that a folder on disk is not proof of installation.
+- **Metadata:** canonical URL, Open Graph and Twitter cards, a generated social image (`opengraph-image.jsx`, build time), `robots.txt` and `sitemap.xml`. The public address is set in `app/site.js`.
+- **Fixed on the way:** without WebGL (or with the context lost) the opening showed the night sculpture over the paper one, now they swap with the iris. A ScrollTrigger refresh while in Process (resize, fonts) could reset the shared night layer and leave light text on paper; the closing frame now uses its own layer.
+
+Verified against upstream (2026-11-07): `skills` CLI requires Node.js ≥ 22.20 and supports `--skill` and `-a`; `ui-ux-pro-max-cli` and `impeccable` exist on npm; the Studio skills exist in `wshobson/agents`; every external link answers 200. No installer was executed.
+
+| Gate | Status | Evidence |
+| --- | --- | --- |
+| G3 Visual review | PASS | 375, 768, 1440 and 1920 px: Setup and Install at all four; the cinematic sequences at 375, 768 and 1440 (at 1920 the first frame only: the pane renders WebGL in software, about 0.5 fps there) |
+| G4 Interactions | PASS | Profile, ambition and agent selection with the mouse and arrow keys (focus ring visible); commands and prompts change with the setup; copy with a real click on commands and prompts; details open by profile |
+| G5 Responsive | PASS | No horizontal overflow at 375, 768, 1440 and 1920 |
+| G6 Accessibility | PARTIAL | Landmarks, fieldsets and names verified in the DOM; keyboard path and focus rings checked; static-page contrast scan clean. OS reduced-motion emulation and a screen reader NOT RUN |
+| G7 Engineering | PASS | `npm run lint` clean; `npm run build` succeeds (static `/`, `opengraph-image`, `robots.txt`, `sitemap.xml`) |
+| G8 Performance | NOT RUN | No Lighthouse or frame-rate measurement is possible in the available browser (software WebGL) |
+| G9 Assets and content | PASS | Claims taken from the canonical repository; no invented commands, versions or scores |
+| G10 Regression | PASS | Install CTA, header, motion switch, anchors, no-WebGL fallback and Motion off still work |
+| G11 Visual ambition | PASS (internal, qualitative) | Unchanged: the new chapters reuse the existing language (monument type, stroke drawings, night frame) |
 
 ## Prototype gate
 - Slice 1 (stage, opening frame, lights-down) was reviewed in the browser first; the half-dimmed grey frame it showed was replaced by the iris before the other chapters were rebuilt.

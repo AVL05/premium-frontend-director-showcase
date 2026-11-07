@@ -1,5 +1,6 @@
 import { Archivo, DM_Sans } from 'next/font/google';
 import './globals.css';
+import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from './site';
 
 // Self-hosted at build time by next/font (part of Next.js, no extra dependency). Both OFL.
 // Archivo is variable on weight and width: one family gives the condensed monument and the wide kicker.
@@ -7,15 +8,12 @@ const display = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const text = DM_Sans({ subsets: ['latin'], variable: '--font-text', display: 'swap' });
 
 export const metadata = {
-  metadataBase: new URL('https://the-art-of-direction.netlify.app'),
+  metadataBase: new URL(SITE_URL),
   alternates: { canonical: '/' },
-  title: 'The Art of Direction — Premium Frontend Director',
-  description: 'An open-source agent skill that teaches coding agents to art-direct a frontend, build it, and prove it in a real browser against 11 quality gates.',
-  openGraph: {
-    title: 'The Art of Direction — Premium Frontend Director',
-    description: 'Good interfaces are built. Great experiences are directed.',
-    type: 'website',
-  },
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  openGraph: { title: SITE_TITLE, description: SITE_DESCRIPTION, url: '/', siteName: 'The Art of Direction', type: 'website', locale: 'en_US' },
+  twitter: { card: 'summary_large_image', title: SITE_TITLE, description: SITE_DESCRIPTION },
   robots: { index: true, follow: true },
 };
 
