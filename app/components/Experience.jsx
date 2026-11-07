@@ -8,6 +8,7 @@
 // previous one ends, so scrolling backwards replays the take in reverse without jumps.
 import { useEffect, useRef } from 'react';
 import { motionAllowed, MOTION_EVENT, DEFAULT_STATE } from './motion';
+import StageOverlay from './StageOverlay';
 
 const root = () => document.documentElement;
 // Resolves to the active direction's teardown (or null).
@@ -19,18 +20,22 @@ const mobile = () => window.innerWidth <= 760;
 // Object shots that are not tied to a word, in viewport fractions (see stage.js).
 const SHOTS = {
   process: () => (wide() ? { x: .73, y: .47, size: .6 } : { x: .5, y: .26, size: .36 }),
-  session: () => (wide() ? { x: .87, y: .4, size: .3 } : { x: .84, y: .14, size: .18 }),
+  // Macro: the object enormous and cropped by the frame edge, the session floating in front of it.
+  session: () => (wide() ? { x: .97, y: .52, size: 1.3 } : { x: .92, y: .2, size: .5 }),
   standard: () => (wide() ? { x: .19, y: .76, size: .38 } : { x: .8, y: .17, size: .24 }),
 };
 
-// Object forms for each take of the workflow.
+// Object forms for each take of the workflow. Every key is set so any form can follow any other.
+//  Discover: noise. Direct: three re-composed copies (A/B/C), two set aside, one takes the frame.
+//  Document: blueprint with dimensions. Build: solid. Prove: framed at four viewport sizes.
+const BASE_FORM = { solid: 1, points: 0, scatter: 0, wire: 0, zoom: 1, ghost: 0, choose: 1, anno: 0, frames: 0 };
 const FORMS = {
-  head: { solid: 1, points: 0, scatter: 0, wire: 0, zoom: 1 },
-  Discover: { solid: 0, points: 1, scatter: 1, wire: 0, zoom: 1 },
-  Direct: { solid: 0, points: 1, scatter: 0, wire: 0, zoom: 1 },
-  Document: { solid: 0, points: .22, scatter: 0, wire: 1, zoom: 1 },
-  Build: { solid: 1, points: 0, scatter: 0, wire: 0, zoom: 1 },
-  Prove: { solid: 1, points: 0, scatter: 0, wire: 0, zoom: 1.12 },
+  head: { ...BASE_FORM, ghost: 1, choose: 0 },
+  Discover: { ...BASE_FORM, solid: 0, points: 1, scatter: 1, ghost: 1, choose: 0 },
+  Direct: { ...BASE_FORM, solid: 0, points: 1 },
+  Document: { ...BASE_FORM, solid: 0, points: .22, wire: 1, anno: 1 },
+  Build: { ...BASE_FORM },
+  Prove: { ...BASE_FORM, zoom: 1.12, frames: 1 },
 };
 const TAKES = ['Discover', 'Direct', 'Document', 'Build', 'Prove'];
 
@@ -54,7 +59,38 @@ function stopAnchor(selector, ringEm, mobileRingEm, relativeTo) {
   };
 }
 
-async function direct({ canvas, state }) {
+// DOM layers that follow the object: the annotation overlay and the paper seen through the portal.
+function overlayPainter(state) {
+  const overlay = document.querySelector('.overlay');
+  const day = document.querySelector('.backdrop-day');
+  let shown = false, dayShown = false;
+  const css = (el, k, v) => el.style.setProperty(k, v);
+  return metrics => {
+    const s = state;
+    const dirs = s.points * s.ghost * Math.max(0, 1 - s.scatter * 1.6);
+    const on = s.opacity > .01 && (s.anno > .001 || s.frames > .001 || dirs > .01);
+    if (overlay && on) {
+      const d = metrics.diameter;
+      overlay.style.transform = `translate3d(${metrics.cx - d}px,${metrics.cy - d}px,0)`;
+      overlay.style.width = overlay.style.height = 2 * d + 'px';
+      css(overlay, '--u', (d / 100).toFixed(4));
+      css(overlay, '--anno', s.anno.toFixed(3));
+      css(overlay, '--frames', s.frames.toFixed(3));
+      css(overlay, '--dirs', dirs.toFixed(3));
+      css(overlay, '--choose', s.choose.toFixed(3));
+    }
+    if (overlay && on !== shown) { overlay.style.visibility = on ? 'visible' : 'hidden'; shown = on; }
+    const dayOn = s.portal > .001;
+    if (day && dayOn) {
+      css(day, '--day', (metrics.hole * Math.sqrt(s.portal)).toFixed(1) + 'px');
+      css(day, '--dx', s.x * 100 + '%');
+      css(day, '--dy', s.y * 100 + '%');
+    }
+    if (day && dayOn !== dayShown) { day.style.visibility = dayOn ? 'visible' : 'hidden'; dayShown = dayOn; }
+  };
+}
+
+async function direct({ canvas, frontCanvas, state }) {
   const [{ gsap }, { ScrollTrigger }, { SplitText }, { default: Lenis }] = await Promise.all([
     import('gsap'), import('gsap/ScrollTrigger'), import('gsap/SplitText'), import('lenis'),
   ]);
@@ -77,9 +113,13 @@ async function direct({ canvas, state }) {
     const v = e.velocity || 0;
     if (kinetic) { wTo(100 + Math.min(Math.abs(v) * 1.1, 25)); skewTo(gsap.utils.clamp(-9, 9, -v * .3)); }
   });
+  const paint = overlayPainter(state);
+  cleanups.push(() => document.querySelectorAll('.overlay, .backdrop-day').forEach(el => { el.style.visibility = 'hidden'; }));
   const tick = (time, dt) => {
     lenis.raf(time * 1000);
-    stage?.render(time, Math.min(dt / 1000, .05));
+    if (!stage) return;
+    stage.render(time, Math.min(dt / 1000, .05));
+    paint(stage.metrics);
   };
   gsap.ticker.add(tick);
   gsap.ticker.lagSmoothing(0);
@@ -90,7 +130,7 @@ async function direct({ canvas, state }) {
     const { createStage, webglAvailable } = await import('./stage');
     if (webglAvailable()) {
       stage = createStage(canvas, {
-        touch, state,
+        touch, state, frontCanvas,
         onContextLost: () => { html.classList.remove('stage-live'); html.classList.add('no-webgl'); stage = null; },
       });
       html.classList.add('stage-live');
@@ -119,12 +159,15 @@ async function direct({ canvas, state }) {
     // ======== 1. Opening choreography ========
     const heroSplit = split('.hero-title .t-text', { type: 'chars', mask: 'chars' });
     const kicker = split('.hero-title .t-kicker', { type: 'words', mask: 'words' });
-    Object.assign(state, pos(hero()), { solid: 0, zoom: .82, twist: -1.4 });
+    // front: the nearest arcs of the rings pass in front of the headline (the threading pass).
+    // The intro animates its own keys (intro, introMove), never the scroll-driven ones, so a visitor
+    // who scrolls during the first seconds cannot have a later shot overwritten by the intro.
+    Object.assign(state, pos(hero()), { intro: 0, introMove: 0, front: 1 });
     gsap.timeline({ defaults: { ease: 'expo.out' } })
       .from(heroSplit.chars, { yPercent: 112, duration: 1.5, stagger: .045 }, .15)
       .from(kicker.words, { yPercent: 105, duration: 1.2, stagger: .06 }, .3)
-      .to(state, { solid: 1, duration: 2.4, ease: 'power2.inOut' }, .35)
-      .to(state, { zoom: 1, twist: 0, duration: 2.8 }, .35)
+      .to(state, { intro: 1, duration: 2.4, ease: 'power2.inOut' }, .35)
+      .to(state, { introMove: 1, duration: 2.8 }, .35)
       .from('.site-header > *, .hero-meta > *', { y: -16, autoAlpha: 0, duration: 1, stagger: .06 }, .9)
       .from('.hero-base > *', { y: 26, autoAlpha: 0, duration: 1.1, stagger: .08 }, 1.05)
       .from('.frame-marks--paper i', { scale: 0, autoAlpha: 0, duration: .9, stagger: .05, ease: 'power3.out' }, .6);
@@ -136,6 +179,7 @@ async function direct({ canvas, state }) {
       scrollTrigger: { trigger: '.scene', start: 'top top', end: '+=170%', scrub: true, pin: true, invalidateOnRefresh: true },
     })
       .to('.hero-meta, .hero-base, .frame-marks--paper', { autoAlpha: 0, y: -50, duration: .2 }, .02)
+      .fromTo(state, { front: 1 }, { front: 0, duration: .1 }, .04)
       .to('.hero-title .t-kicker', { yPercent: -160, autoAlpha: 0, duration: .26, ease: 'power2.in' }, .05)
       .fromTo(heroSplit.chars, { yPercent: 0 }, { yPercent: -112, duration: .26, stagger: .012, ease: 'power2.in', immediateRender: false }, .07)
       // Iris: night opens as a circle from the full stop, so there is never a half-dimmed grey frame.
@@ -188,19 +232,32 @@ async function direct({ canvas, state }) {
       tl.to(track, { x: () => -distance(), duration: 5 }, 0)
         .fromTo('.hud-bar i', { scaleX: 0 }, { scaleX: 1, duration: 5 }, 0);
       // Take i sits centred at t = i + 1 (t = 0 is the head panel).
-      tl.fromTo(state, FORMS.head, { ...FORMS.Discover, duration: .75, ease: 'power2.inOut' }, .3)
-        .to(state, { ...FORMS.Direct, duration: .75, ease: 'power2.inOut' }, 1.3)
-        .to(state, { ...FORMS.Document, duration: .7, ease: 'power2.inOut' }, 2.3)
-        .to(state, { ...FORMS.Build, duration: .7, ease: 'power2.inOut' }, 3.3)
-        .to(state, { ...FORMS.Prove, duration: .6, ease: 'power2.inOut' }, 4.3)
+      const io = { ease: 'power2.inOut' };
+      tl.fromTo(state, FORMS.head, { ...FORMS.Discover, duration: .75, ...io }, .3)
+        // Direct: three directions condense out of the noise, two are set aside, one takes the frame.
+        .to(state, { scatter: 0, duration: .55, ...io }, 1.3)
+        // The row of three needs more room: the shot slides right while it is on screen.
+        .fromTo(state, { x: () => SHOTS.process().x }, { x: () => SHOTS.process().x + .045, duration: .5, ...io, immediateRender: false }, 1.2)
+        .fromTo(state, { x: () => SHOTS.process().x + .045 }, { x: () => SHOTS.process().x, duration: .45, ...io, immediateRender: false }, 2.25)
+        .to(state, { choose: 1, duration: .3, ...io }, 1.9)
+        .to(state, { ghost: 0, duration: .4, ease: 'power3.inOut' }, 2.2)
+        // Document: the blueprint, then its dimensions are drawn.
+        .to(state, { solid: 0, points: .22, wire: 1, duration: .5, ...io }, 2.55)
+        .to(state, { anno: 1, duration: .45, ...io }, 2.75)
+        .to(state, { anno: 0, duration: .3, ...io }, 3.3)
+        .to(state, { solid: 1, points: 0, wire: 0, duration: .7, ...io }, 3.35)
+        // Prove: four viewport frames close in around it.
+        .to(state, { zoom: 1.12, frames: 1, duration: .6, ...io }, 4.3)
         .fromTo(state, { rot: 2.1 }, { rot: 4.6, duration: 5 }, 0);
 
       gsap.utils.toArray('.take:not(.take--head)').forEach(take => {
         const chars = split(take.querySelector('.take-name'), { type: 'chars', mask: 'chars' }).chars;
-        gsap.timeline({ scrollTrigger: { trigger: take, containerAnimation: tl, start: 'left 62%', toggleActions: 'play none none reverse' } })
+        const reveal = gsap.timeline({ scrollTrigger: { trigger: take, containerAnimation: tl, start: 'left 62%', toggleActions: 'play none none reverse' } })
           .from(take.querySelector('.take-slate'), { autoAlpha: 0, x: 40, duration: .8, ease: 'expo.out' }, 0)
           .from(chars, { yPercent: 112, duration: 1.1, stagger: .035, ease: 'expo.out' }, .05)
           .from(take.querySelector('.take-copy'), { autoAlpha: 0, y: 24, duration: 1, ease: 'expo.out' }, .3);
+        const meta = take.querySelectorAll('.take-meta li');
+        if (meta.length) reveal.from(meta, { autoAlpha: 0, y: 16, duration: .8, stagger: .08, ease: 'expo.out' }, .45);
         // Parallax inside the take: the name travels slightly slower than its panel.
         gsap.fromTo(take.querySelector('.take-name'), { xPercent: 18 }, {
           xPercent: -18, ease: 'none',
@@ -211,7 +268,18 @@ async function direct({ canvas, state }) {
 
     // ======== 4b. Process, narrow: each take sets the object's form as it arrives ========
     mm.add('(max-width: 899px)', () => {
-      const go = form => gsap.to(state, { ...FORMS[form], duration: 1.4, ease: 'power2.inOut', overwrite: 'auto' });
+      let current = null;
+      const go = form => {
+        current?.kill();
+        const io = { ease: 'power2.inOut' };
+        current = form === 'Direct'
+          ? gsap.timeline()
+            .to(state, { ...FORMS.Discover, scatter: 0, duration: 1.1, ...io })
+            .to(state, { choose: 1, duration: .6, ...io })
+            .to(state, { ghost: 0, duration: .8, ease: 'power3.inOut' })
+          : gsap.to(state, { ...FORMS[form], duration: 1.4, ...io });
+      };
+      cleanups.push(() => current?.kill());
       gsap.utils.toArray('.take:not(.take--head)').forEach((take, i) => {
         ScrollTrigger.create({
           trigger: take, start: 'top 55%', end: 'bottom 55%',
@@ -222,20 +290,30 @@ async function direct({ canvas, state }) {
       });
     });
 
-    // ======== 5. Lights up: the iris closes back onto the object, porcelain again ========
-    // In Craft the object sits on the title's full stop and leaves the frame with it, so it never
-    // covers the discipline copy; it re-enters for the session.
+    // ======== 5. The portal: the camera passes through ring A's hole into the paper world ========
+    // The ring turns flat to the lens, the hole is centred and grows past the frame; the paper
+    // seen through it becomes the next chapter. Behind the camera the object is re-staged,
+    // invisible, on the Craft title's full stop and materialises there.
+    // In Craft the object rides the title and leaves the frame with it, so it never covers the
+    // discipline copy; it re-enters for the session.
     const ih = () => window.innerHeight;
     const docTop = sel => document.querySelector(sel).getBoundingClientRect().top + window.scrollY;
     const craftStop = () => stopAnchor('#craft-title b', 2.2, 3.2);
     const craftLand = () => docTop('#craft') - ih() * .15;
     const craftLeave = () => Math.max(craftLand() + 1, docTop('#session') - ih());
     const craftAt = scroll => () => (craftStop().docY - scroll()) / ih();
+    const off = { immediateRender: false };
     gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: scrub('#craft', { start: 'top bottom', end: () => craftLand() }) })
-      .fromTo('.backdrop-night', { '--iris': fullIris, '--ix': () => craftStop().x * 100 + '%', '--iy': () => craftAt(craftLand)() * 100 + '%' },
-        { '--iris': '0px', ease: 'power2.out', immediateRender: false }, 0)
-      .fromTo(state, { night: 1, ...at('process'), ...FORMS.Prove },
-        { night: 0, x: () => craftStop().x, y: craftAt(craftLand), size: () => craftStop().size, ...FORMS.Build, ease: 'power2.inOut', immediateRender: false }, 0);
+      .fromTo(state, { ...at('process'), face: 0, frames: 1 }, { x: .5, y: .5, face: 1, frames: 0, duration: .26, ease: 'power2.inOut', ...off }, 0)
+      .fromTo('.process-hud', { autoAlpha: 1 }, { autoAlpha: 0, duration: .2, ...off }, 0)
+      .fromTo(state, { zoom: 1.12 }, { zoom: 13, duration: .5, ease: 'power3.in', ...off }, .22)
+      .fromTo(state, { portal: 0 }, { portal: 1, duration: .3, ease: 'power1.in', ...off }, .3)
+      .fromTo(state, { opacity: 1 }, { opacity: 0, duration: .05, ...off }, .68)
+      .set('.backdrop-night', { autoAlpha: 0 }, .74)
+      .fromTo(state,
+        { night: 1, portal: 1, face: 1, zoom: 13, x: .5, y: .5, size: () => SHOTS.process().size, solid: 1 },
+        { night: 0, portal: 0, face: 0, zoom: 1, x: () => craftStop().x, y: craftAt(craftLand), size: () => craftStop().size, solid: 0, duration: .001, ...off }, .75)
+      .fromTo(state, { opacity: 0, solid: 0 }, { opacity: 1, solid: 1, duration: .25, ...off }, .752);
     gsap.fromTo(state, { y: craftAt(craftLand) }, {
       y: craftAt(craftLeave), ease: 'none', immediateRender: false,
       scrollTrigger: { start: craftLand, end: craftLeave, scrub: true, invalidateOnRefresh: true },
@@ -278,7 +356,7 @@ async function direct({ canvas, state }) {
     const maxScroll = () => ScrollTrigger.maxScroll(window) - 1;
     const landAt = () => Math.min(close().docY - window.innerHeight * .5, maxScroll());
     gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: scrub('#install', { start: 'top bottom', end: () => landAt() }) })
-      .fromTo('.backdrop-night', { '--iris': '0px', '--ix': () => SHOTS.standard().x * 100 + '%', '--iy': () => SHOTS.standard().y * 100 + '%' },
+      .fromTo('.backdrop-night', { autoAlpha: 1, '--iris': '0px', '--ix': () => SHOTS.standard().x * 100 + '%', '--iy': () => SHOTS.standard().y * 100 + '%' },
         { '--iris': fullIris, ease: 'power2.in', immediateRender: false }, 0)
       .fromTo(state, { ...at('standard'), solid: 0, wire: 1, night: 0 }, {
         x: () => close().x, y: () => (close().docY - landAt()) / window.innerHeight, size: () => close().size,
@@ -291,6 +369,28 @@ async function direct({ canvas, state }) {
     gsap.from('.chapter--install > :is(.chapter-lede,.install-command,.install-actions)', {
       autoAlpha: 0, y: 30, duration: 1, stagger: .1, ease: 'expo.out', scrollTrigger: { trigger: '.chapter--install .chapter-lede', start: 'top 90%', once: true },
     });
+
+    // ======== Viewfinder cursor (fine pointers only; the native cursor stays) ========
+    const cursor = document.querySelector('.cursor');
+    if (!touch && cursor) {
+      const cx = gsap.quickTo(cursor, 'x', { duration: .45, ease: 'power3.out' });
+      const cy = gsap.quickTo(cursor, 'y', { duration: .45, ease: 'power3.out' });
+      const move = e => {
+        cx(e.clientX); cy(e.clientY);
+        cursor.classList.add('cursor--on');
+        cursor.classList.toggle('cursor--target', !!e.target.closest?.('a, button'));
+      };
+      const out = () => cursor.classList.remove('cursor--on');
+      window.addEventListener('pointermove', move, { passive: true });
+      document.documentElement.addEventListener('pointerleave', out);
+      html.classList.add('has-cursor');
+      cleanups.push(() => {
+        window.removeEventListener('pointermove', move);
+        document.documentElement.removeEventListener('pointerleave', out);
+        html.classList.remove('has-cursor');
+        cursor.classList.remove('cursor--on', 'cursor--target');
+      });
+    }
 
     // ======== Matter responds: magnetic primary actions (fine pointers only) ========
     if (!touch) gsap.utils.toArray('.magnetic').forEach(el => {
@@ -328,6 +428,7 @@ async function direct({ canvas, state }) {
 
 export default function Experience() {
   const canvasRef = useRef(null);
+  const frontRef = useRef(null);
   const stateRef = useRef({ ...DEFAULT_STATE });
 
   useEffect(() => {
@@ -341,7 +442,7 @@ export default function Experience() {
         if (!alive) return null;
         if (!motionAllowed()) return still();
         root().classList.remove('motion-static');
-        try { return await direct({ canvas: canvasRef.current, state: stateRef.current }); }
+        try { return await direct({ canvas: canvasRef.current, frontCanvas: frontRef.current, state: stateRef.current }); }
         catch { root().classList.remove('motion-ready', 'stage-live'); return still(); }
       });
     };
@@ -358,8 +459,11 @@ export default function Experience() {
   }, []);
 
   return <>
-    <div className="backdrop" aria-hidden="true"><div className="backdrop-night"/></div>
+    <div className="backdrop" aria-hidden="true"><div className="backdrop-night"/><div className="backdrop-day"/></div>
     <canvas ref={canvasRef} className="stage" aria-hidden="true"/>
+    <StageOverlay/>
+    <canvas ref={frontRef} className="stage-front" aria-hidden="true"/>
     <div className="grain" aria-hidden="true"/>
+    <div className="cursor" aria-hidden="true"><span className="cursor-frame"><i/><i/><i/><i/></span></div>
   </>;
 }

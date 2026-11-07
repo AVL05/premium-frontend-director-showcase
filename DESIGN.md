@@ -80,7 +80,25 @@ No ambient particle wallpaper (points exist only as a state of the object), no p
 - The session transcript is marked "Illustrative session"; it describes workflow phases, never scores.
 - Gate names are those published in the skill's `references/quality-gates.md`.
 
+## Art-direction pass 2 (2026-11-07)
+The owner asked to raise the artistic level. Three upgrades, each with a narrative job:
+
+1. **The takes tell their phase literally.**
+   - Direct: the noise condenses into three small re-composed copies labelled A/B/C (the three directions actually considered for this site: Motion lab, Continuous take, Type tunnel). A and C are struck and drift away; B grows into the frame. The take panel lists the same three directions.
+   - Document: the wireframe gains a drawn blueprint: envelope circle, centre mark, Ø/H dimension lines and leaders labelled with the real geometry (R 1.00, tube 0.20, link offset 0.90).
+   - Prove: four viewport frames at real aspect ratios (1920, 1440, 768, 375) draw in around the object.
+2. **Studio material and light.** Wrap diffuse with warm shadows, clearcoat Fresnel, procedural softbox reflections, contact occlusion where the rings pass each other, a contact shadow, a soft warm halo under cinema light and a graded vignette. In the opening the nearest arcs of the rings pass **in front of** the headline (a second, clipped pass copied to a canvas above the type; desktop only).
+3. **Varied staging.**
+   - Portal (Prove → Craft): ring A turns flat to the lens, its hole is centred and grows past the frame; the paper world seen through it becomes the next chapter. Behind the camera the object is re-staged invisibly on the Craft title and dissolves in. This replaces the second iris, so the two night/day changes are no longer the same gesture.
+   - Macro (Session): the object at 1.3× viewport height, cropped by the frame edge, with the session floating in front.
+
+Polish: viewfinder cursor (four corners, difference blend, native cursor kept, fine pointers only); film grain re-seeded at ~7 fps (stops with Motion off / reduced motion). The film-leader countdown was considered and rejected as a cliché that adds nothing here.
+
+Overlays (`StageOverlay.jsx`) are aria-hidden SVG positioned on the object each frame from `stage.metrics`; strokes and type are divided by the px-per-unit so they stay a constant screen size.
+
 ## Implementation notes
+- The intro animates its own keys (`intro`, `introMove`); the stage combines them with the scroll-driven `solid`/`zoom`/`twist`. Before this, a visitor who scrolled during the first ~3 s could have the intro overwrite a later shot (reproduced: Direct showed the solid object).
+- The night halo uses normal blending: additive blending wrote alpha 1 across the whole quad of the transparent canvas and showed its rectangle.
 - All pinned/scrubbed timelines use `scrub: true`. Lenis already smooths the scroll; a lagged scrub (`scrub: 1`) kept writing the object's state after later chapters on fast anchor jumps.
 - Lenis re-measures on every ScrollTrigger refresh (pin spacers change the page height); without it anchor jumps stopped at the old scroll limit.
 - `DEFAULT_STATE` lives in `motion.js`, so the static import graph never contains `three`.
@@ -101,6 +119,7 @@ Evidence: `artifacts/before/hero-1440.jpg`, `artifacts/after/01–17-*.jpg` (loc
 | G8 Performance | PARTIAL | Production: CLS 0 (buffered observer), 11 JS files ≈ 322 KB compressed in total, of which `three` ≈ 132 KB loads lazily at ≈ 0.5 s, after first paint. LCP not captured (pane hidden). Lighthouse NOT RUN; FPS not measured |
 | G9 Assets/content | PASS | Original geometry, OFL fonts, no fabricated claims; the session is labelled illustrative |
 | G10 Regression | PASS | Install command, copy, external links (`noopener noreferrer`), skip link, mobile menu unchanged |
+| G11 (pass 2) | PASS (internal, qualitative) | `artifacts/after/20–28-*`: threading over the headline, A/B/C directions, blueprint, viewport frames, portal sequence, macro session, mobile Direct. Re-checked after pass 2: lint clean, build OK, production CLS 0, 11 JS files ≈ 325 KB compressed (three ≈ 133 KB, lazy), no console errors, Motion off/on round trip restores everything, no horizontal overflow at 375. Owner acceptance pending |
 | G11 Visual ambition | PASS (internal, qualitative) | Before: static SVG sculpture on paper. After: real-time WebGL object, intro dissolve, iris + letterbox, horizontal take with the object morphing points → blueprint → solid → rim-lit, kinetic variable type, typed session. Structural, not cosmetic. Owner acceptance pending |
 
 ## Prototype gate

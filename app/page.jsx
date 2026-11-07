@@ -21,7 +21,9 @@ const takes = [
   ['Build', 'Vertical slices. For ambitious work the defining viewport is prototyped first, reviewed, and only then scaled.'],
   ['Prove', 'Real browsers at 375, 768, 1440 and 1920. Every gate is reported as pass, fail or not run.'],
 ];
-const kinetic = ['Composition', 'Rhythm', 'Contrast', 'Light', 'Motion', 'Proof'];
+// The three directions actually considered for this site (DESIGN.md).
+const directions = [['A', 'Motion lab', false], ['B', 'The continuous take', true], ['C', 'Type tunnel', false]];
+const kinetic =['Composition', 'Rhythm', 'Contrast', 'Light', 'Motion', 'Proof'];
 const installCommand = 'npx skills add AVL05/premium-frontend-director --skill premium-frontend-director -a claude-code';
 const prompt = 'Use $premium-frontend-director to redesign this frontend. Audit the current repository, select a creative ambition mode, propose three brand-appropriate directions, prototype the defining moment, implement one coherent system, review actual desktop and mobile rendering, and report objective quality gates.';
 const sessionLines = [
@@ -101,6 +103,11 @@ export default function Home() {
             <p className="take-slate"><span>Take {String(i + 1).padStart(2, '0')}</span><span aria-hidden="true">/ 05</span></p>
             <h3 id={'take-' + i} className="take-name">{name}<b>.</b></h3>
             <p className="take-copy">{copy}</p>
+            {name === 'Direct' && <ul className="take-meta" aria-label="The three directions considered for this site">
+              {directions.map(([id, label, chosen]) => <li key={id} className={chosen ? 'is-chosen' : undefined}>
+                <span>{id}</span>{label}<em>{chosen ? 'Chosen' : 'Set aside'}</em>
+              </li>)}
+            </ul>}
           </article>)}
         </div>
         <div className="process-hud" aria-hidden="true">

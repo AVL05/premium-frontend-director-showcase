@@ -1,10 +1,11 @@
 // The stage: one WebGL object directed through every chapter.
-// Not a React component. Experience.jsx owns the lifecycle and drives `stage.state` with GSAP;
+// Not a React component. Experience.jsx owns the lifecycle and tweens the shared `state`;
 // this module only turns that state into pixels. One renderer, one draw loop (gsap.ticker).
 import {
   WebGLRenderer, Scene, PerspectiveCamera, Group, Mesh, Points, LineSegments,
   TorusGeometry, PlaneGeometry, BufferGeometry, Float32BufferAttribute,
   ShaderMaterial, LineBasicMaterial, Color, MathUtils, NormalBlending,
+  Euler, Quaternion,
 } from 'three';
 import { DEFAULT_STATE } from './motion';
 
@@ -14,6 +15,10 @@ const RINGS = [
   { c: [-OFFSET, 0, 0], plane: 'xy' },
   { c: [OFFSET, 0, 0], plane: 'xz' },
 ];
+// The object's widest extent in object units: `size` (viewport-height fraction) maps to this.
+export const EXTENT = 3.1;
+// The portal aims the camera through ring A's hole, above ring B (which threads the hole at y = 0).
+const AIM = [-OFFSET, .42, 0];
 
 const NOISE = /* glsl */`
 vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
@@ -40,26 +45,34 @@ float snoise(vec3 v){
   return 105.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
 }`;
 
-// Solid: porcelain under paper light, near-black with a warm rim under cinema light.
+// ---- Solid ----
+// Porcelain under paper light (wrap diffuse, warm shadows, clearcoat, studio softboxes, contact
+// occlusion between the rings); near-black with a warm rim under cinema light.
 // uSolid dissolves the surface through noise with a signal-red burning edge.
+// uFront: the "threading" pass, which keeps only the parts nearest the camera.
 const solidVertex = /* glsl */`
 uniform float uTime, uDistort;
-varying vec3 vNormal, vWorld, vObj;
+uniform mat4 uLocal;
+varying vec3 vNormal, vWorld, vObj, vPose;
 ${NOISE}
 void main(){
   vec3 p = position + normal * snoise(position * 1.7 + uTime * .35) * uDistort;
   vObj = position;
+  vPose = (uLocal * vec4(position, 1.)).xyz;
   vec4 w = modelMatrix * vec4(p, 1.);
   vWorld = w.xyz;
   vNormal = normalize(mat3(modelMatrix) * normal);
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
 const solidFragment = /* glsl */`
-uniform float uNight, uSolid, uOpacity;
+uniform float uNight, uSolid, uOpacity, uFront, uFrontZ;
 uniform vec3 uSignal, uRim;
-varying vec3 vNormal, vWorld, vObj;
+varying vec3 vNormal, vWorld, vObj, vPose;
 ${NOISE}
+float torusA(vec3 p){ vec3 q = p - vec3(${-OFFSET}, 0., 0.); return length(vec2(length(q.xy) - ${R.toFixed(2)}, q.z)) - ${TUBE.toFixed(2)}; }
+float torusB(vec3 p){ vec3 q = p - vec3(${OFFSET}, 0., 0.); return length(vec2(length(q.xz) - ${R.toFixed(2)}, q.y)) - ${TUBE.toFixed(2)}; }
 void main(){
+  if (uFront > .5 && vWorld.z < uFrontZ) discard;
   float d = snoise(vObj * 2.3) * .5 + .5;
   float edge = uSolid * 1.12 - .06;
   if (d > edge) discard;
@@ -67,19 +80,26 @@ void main(){
   if (!gl_FrontFacing) n = -n;
   vec3 v = normalize(cameraPosition - vWorld);
   float nv = max(dot(n, v), 0.);
-  vec3 L = normalize(vec3(-.55, .8, .65));
-  float diff = max(dot(n, L), 0.);
-  float spec = pow(max(dot(n, normalize(L + v)), 0.), 70.);
-  float strip = smoothstep(.9, .99, dot(reflect(-v, n), normalize(vec3(-.25, .95, .2))));
-  float fres = pow(1. - nv, 3.);
+  vec3 r = reflect(-v, n);
+  float ao = mix(.5, 1., smoothstep(0., .42, max(torusA(vPose), torusB(vPose))));
 
-  vec3 porcelain = mix(vec3(.47, .45, .41), vec3(.985, .975, .955), smoothstep(-.1, 1., diff));
-  porcelain += spec * .45 + strip * .18 + fres * .12;
+  vec3 L = normalize(vec3(-.55, .8, .65));
+  float wrapD = clamp((dot(n, L) + .38) / 1.38, 0., 1.);
+  float spec = pow(max(dot(n, normalize(L + v)), 0.), 90.);
+  float coat = .04 + .96 * pow(1. - nv, 5.);
+  float key = smoothstep(.84, .93, dot(r, normalize(vec3(-.45, .78, .45))));
+  float fill = smoothstep(.9, .965, dot(r, normalize(vec3(.85, .15, .5)))) * .45;
+  float strip = smoothstep(.965, .99, dot(r, normalize(vec3(.1, .99, -.1)))) * .5;
+
+  vec3 porcelain = mix(vec3(.5, .45, .4), vec3(.962, .948, .922), wrapD) * ao;
+  porcelain += vec3(1., .87, .79) * pow(1. - nv, 2.2) * .07;
+  porcelain += (key + fill + strip) * (.3 + coat * .7) * .6 + spec * .55;
+  porcelain -= smoothstep(-.15, -.9, r.y) * .05;
 
   vec3 Lr = normalize(vec3(.95, .25, -.45));
   float rim = pow(1. - nv, 2.2) * (max(dot(n, Lr), 0.) * 1.3 + .12);
-  vec3 night = vec3(.05, .056, .06) + diff * vec3(.07, .072, .075);
-  night += rim * uRim * 1.7 + spec * vec3(1., .82, .72) * .3 + strip * uRim * .25;
+  vec3 night = (vec3(.05, .056, .06) + wrapD * vec3(.06, .062, .066)) * ao;
+  night += rim * uRim * 1.7 + spec * vec3(1., .82, .72) * .3 + (key + strip) * uRim * .22 * coat;
 
   vec3 col = mix(porcelain, night, uNight);
   float burn = smoothstep(edge - .07, edge, d) * step(uSolid, .995);
@@ -87,41 +107,54 @@ void main(){
   gl_FragColor = vec4(col, uOpacity);
 }`;
 
-// Points: the same surface sampled, able to scatter into a cloud ("noise") and converge back ("form").
+// ---- Points ----
+// The same surface sampled. Three states: scattered ("noise"), three small re-composed copies side
+// by side ("three directions"), and the single form. uChoose fades the two set-aside copies.
 const pointsVertex = /* glsl */`
 attribute vec3 aScatter;
-attribute float aRand;
-uniform float uScatter, uTime, uPx, uSize;
-varying float vRand;
+attribute float aRand, aGhost;
+uniform float uScatter, uTime, uPx, uSize, uGhost, uChoose, uRigScale;
+varying float vRand, vAlpha;
 ${NOISE}
 void main(){
+  float g = aGhost - 1.;
+  float a = g * 1.2, b = g * .75;
+  mat3 ry = mat3(cos(a), 0., -sin(a), 0., 1., 0., sin(a), 0., cos(a));
+  mat3 rx = mat3(1., 0., 0., 0., cos(b), sin(b), 0., -sin(b), cos(b));
+  vec3 f = mix(position, rx * ry * position * .38, uGhost);
   float t = smoothstep(aRand * .35, aRand * .35 + .65, uScatter);
-  vec3 p = mix(position, aScatter, t);
-  float drift = .05 + .14 * t;
+  vec3 p = mix(f, aScatter, t);
+  float drift = .04 + .14 * t;
   p += vec3(snoise(p * .7 + uTime * .12), snoise(p * .7 + 17. + uTime * .12), snoise(p * .7 + 31. + uTime * .12)) * drift;
   vec4 mv = modelViewMatrix * vec4(p, 1.);
+  // Copies are laid out in screen space, so the row never turns with the object.
+  mv.x += g * (1.3 + uChoose * .45) * uGhost * uRigScale * (1. - t);
   gl_Position = projectionMatrix * mv;
   gl_PointSize = uSize * uPx * (.55 + aRand * .9) / -mv.z;
   vRand = aRand;
+  vAlpha = 1. - uChoose * abs(g);
 }`;
 const pointsFragment = /* glsl */`
 uniform float uOpacity, uNight;
 uniform vec3 uInk, uWarm, uSignal;
-varying float vRand;
+varying float vRand, vAlpha;
 void main(){
   float d = length(gl_PointCoord - .5);
-  if (d > .5) discard;
+  if (d > .5 || vAlpha < .01) discard;
   vec3 c = mix(uInk, uWarm, uNight);
   if (vRand > .955) c = uSignal;
-  float a = smoothstep(.5, .1, d) * (.45 + .55 * vRand) * uOpacity;
+  float a = smoothstep(.5, .1, d) * (.45 + .55 * vRand) * uOpacity * vAlpha;
   gl_FragColor = vec4(c, a);
 }`;
 
-const shadowVertex = /* glsl */`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`;
-const shadowFragment = /* glsl */`uniform float uOpacity;varying vec2 vUv;void main(){vec2 p=(vUv-.5)*vec2(2.,2.);float a=smoothstep(1.,0.,length(p));gl_FragColor=vec4(vec3(.17,.16,.15),a*a*uOpacity*.32);}`;
+const quadVertex = /* glsl */`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`;
+const shadowFragment = /* glsl */`uniform float uOpacity;varying vec2 vUv;void main(){vec2 p=(vUv-.5)*2.;float a=smoothstep(1.,0.,length(p));float core=smoothstep(.55,0.,length(p*vec2(1.,1.6)));gl_FragColor=vec4(vec3(.17,.15,.13),(a*a*.22+core*.2)*uOpacity);}`;
+// A cheap "bloom": a soft warm glow behind the object under cinema light.
+// Normal (not additive) blending: additive would write alpha 1 across the whole quad of a
+// transparent canvas and show its rectangle against the backdrop.
+const haloFragment = /* glsl */`uniform float uOpacity;uniform vec3 uRim;varying vec2 vUv;void main(){float d=length(vUv-.5)*2.;float a=pow(smoothstep(1.,0.,d),2.2);gl_FragColor=vec4(uRim,a*uOpacity*.3);}`;
 
 function torusPoint(ring, u, v, out) {
-  // u: around the ring, v: around the tube
   const x = (R + TUBE * Math.cos(v)) * Math.cos(u);
   const y = (R + TUBE * Math.cos(v)) * Math.sin(u);
   const z = TUBE * Math.sin(v);
@@ -131,23 +164,25 @@ function torusPoint(ring, u, v, out) {
 }
 
 function buildPoints(count) {
-  const pos = new Float32Array(count * 3), scatter = new Float32Array(count * 3), rand = new Float32Array(count);
+  const pos = new Float32Array(count * 3), scatter = new Float32Array(count * 3);
+  const rand = new Float32Array(count), ghost = new Float32Array(count);
   const tmp = [0, 0, 0];
   for (let i = 0; i < count; i++) {
-    torusPoint(RINGS[i % 2], Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, tmp);
+    torusPoint(RINGS[Math.floor(i / 3) % 2], Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, tmp);
     pos.set(tmp, i * 3);
-    // Scatter target: a flattened, wide cloud so the noise state still reads as composed, not a ball.
     // Kept roughly within the object's half of the frame so the copy beside it stays legible.
     const r = 1.1 + Math.pow(Math.random(), .7) * 1.7, th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1);
     scatter[i * 3] = r * Math.sin(ph) * Math.cos(th) * 1.25;
     scatter[i * 3 + 1] = r * Math.cos(ph) * .85;
     scatter[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
     rand[i] = Math.random();
+    ghost[i] = i % 3;
   }
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(pos, 3));
   g.setAttribute('aScatter', new Float32BufferAttribute(scatter, 3));
   g.setAttribute('aRand', new Float32BufferAttribute(rand, 1));
+  g.setAttribute('aGhost', new Float32BufferAttribute(ghost, 1));
   return g;
 }
 
@@ -178,13 +213,15 @@ function buildWire() {
   return g;
 }
 
-export function createStage(canvas, { touch = false, onContextLost, state = { ...DEFAULT_STATE } } = {}) {
+export function createStage(canvas, { touch = false, onContextLost, state = { ...DEFAULT_STATE }, frontCanvas = null } = {}) {
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: !touch, powerPreference: 'high-performance' });
   renderer.setClearColor(0x000000, 0);
   const dprCap = touch ? 1.25 : 1.75;
+  // The threading pass copies the nearest parts of the object onto a canvas above the type.
+  const front = !touch && frontCanvas ? frontCanvas.getContext('2d') : null;
 
   const scene = new Scene();
-  const camera = new PerspectiveCamera(30, 1, .1, 60);
+  const camera = new PerspectiveCamera(30, 1, .1, 80);
   camera.position.set(0, 0, 9);
 
   const rig = new Group(), form = new Group(), pose = new Group();
@@ -192,27 +229,33 @@ export function createStage(canvas, { touch = false, onContextLost, state = { ..
   form.add(pose);
   rig.add(form);
   scene.add(rig);
+  // Facing the camera: form = pose^-1 puts ring A flat to the lens (used by the portal).
+  const qFace = new Quaternion().setFromEuler(pose.rotation).invert();
+  const qFree = new Quaternion(), euler = new Euler();
 
   const signal = new Color('#cd4f38'), rim = new Color('#ee7a5f'), ink = new Color('#2a2b29'), warm = new Color('#f1c9b8');
-  const uniforms = {
+  const shared = {
     uTime: { value: 0 }, uDistort: { value: 0 }, uNight: { value: 0 }, uSolid: { value: 1 }, uOpacity: { value: 1 },
-    uSignal: { value: signal }, uRim: { value: rim },
+    uFront: { value: 0 }, uFrontZ: { value: 0 }, uSignal: { value: signal }, uRim: { value: rim },
   };
-  const solidMat = new ShaderMaterial({ uniforms, vertexShader: solidVertex, fragmentShader: solidFragment, transparent: true });
-  const torusGeo = new TorusGeometry(R, TUBE, touch ? 40 : 64, touch ? 160 : 260);
+  const torusGeo = new TorusGeometry(R, TUBE, touch ? 40 : 72, touch ? 160 : 280);
   const meshes = RINGS.map(ring => {
-    const m = new Mesh(torusGeo, solidMat);
+    const mat = new ShaderMaterial({ uniforms: { ...shared, uLocal: { value: null } }, vertexShader: solidVertex, fragmentShader: solidFragment, transparent: true });
+    const m = new Mesh(torusGeo, mat);
     m.position.set(...ring.c);
     if (ring.plane === 'xz') m.rotation.x = Math.PI / 2;
+    m.updateMatrix();
+    mat.uniforms.uLocal.value = m.matrix;
     pose.add(m);
     return m;
   });
 
   const pointsUniforms = {
-    uTime: uniforms.uTime, uScatter: { value: 0 }, uPx: { value: 1 }, uSize: { value: touch ? 26 : 30 },
-    uOpacity: { value: 0 }, uNight: uniforms.uNight, uInk: { value: ink }, uWarm: { value: warm }, uSignal: { value: signal },
+    uTime: shared.uTime, uNight: shared.uNight, uScatter: { value: 0 }, uPx: { value: 1 }, uSize: { value: touch ? 26 : 30 },
+    uOpacity: { value: 0 }, uGhost: { value: 0 }, uChoose: { value: 0 }, uRigScale: { value: 1 },
+    uInk: { value: ink }, uWarm: { value: warm }, uSignal: { value: signal },
   };
-  const points = new Points(buildPoints(touch ? 5000 : 11000), new ShaderMaterial({
+  const points = new Points(buildPoints(touch ? 6000 : 13500), new ShaderMaterial({
     uniforms: pointsUniforms, vertexShader: pointsVertex, fragmentShader: pointsFragment,
     transparent: true, depthWrite: false, blending: NormalBlending,
   }));
@@ -223,20 +266,27 @@ export function createStage(canvas, { touch = false, onContextLost, state = { ..
   pose.add(wire);
 
   const shadowUniforms = { uOpacity: { value: 1 } };
-  const shadow = new Mesh(new PlaneGeometry(4.2, 1), new ShaderMaterial({ uniforms: shadowUniforms, vertexShader: shadowVertex, fragmentShader: shadowFragment, transparent: true, depthWrite: false }));
+  const shadow = new Mesh(new PlaneGeometry(4.2, 1.1), new ShaderMaterial({ uniforms: shadowUniforms, vertexShader: quadVertex, fragmentShader: shadowFragment, transparent: true, depthWrite: false }));
   shadow.position.set(.1, -1.95, -.6);
   shadow.renderOrder = -1;
   rig.add(shadow);
 
-  // `state` is the directed state (see DEFAULT_STATE). x/y are viewport fractions (0..1, top-left
-  // origin) of the object's centre; size is its diameter as a fraction of viewport height.
+  const haloUniforms = { uOpacity: { value: 0 }, uRim: { value: rim } };
+  const halo = new Mesh(new PlaneGeometry(6.5, 6.5), new ShaderMaterial({ uniforms: haloUniforms, vertexShader: quadVertex, fragmentShader: haloFragment, transparent: true, depthWrite: false }));
+  halo.position.set(0, 0, -1.4);
+  halo.renderOrder = -2;
+  rig.add(halo);
+
   const pointer = { x: 0, y: 0, sx: 0, sy: 0 };
   let w = 1, h = 1, visH = 1, visW = 1, spin = 0, velocity = 0, smoothVel = 0;
+  // Read by Experience.jsx to place DOM overlays on the object (px, viewport space).
+  const metrics = { cx: 0, cy: 0, diameter: 0, hole: 0 };
 
   function resize() {
     w = window.innerWidth; h = window.innerHeight;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
     renderer.setSize(w, h, false);
+    if (front) { frontCanvas.width = canvas.width; frontCanvas.height = canvas.height; }
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     visH = 2 * Math.tan(MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
@@ -254,9 +304,7 @@ export function createStage(canvas, { touch = false, onContextLost, state = { ..
   const lost = e => { e.preventDefault(); onContextLost?.(); };
   canvas.addEventListener('webglcontextlost', lost);
 
-  // The object's extent across its widest diagonal, in object units, used to convert size -> scale.
-  const EXTENT = 3.1;
-
+  let frontDrawn = false;
   function render(time, dt) {
     const s = state;
     // Velocity decays even if no further scroll event arrives (Lenis stops emitting at rest).
@@ -264,31 +312,68 @@ export function createStage(canvas, { touch = false, onContextLost, state = { ..
     smoothVel += (MathUtils.clamp(velocity, -60, 60) - smoothVel) * Math.min(1, dt * 4);
     pointer.sx += (pointer.x - pointer.sx) * Math.min(1, dt * 3);
     pointer.sy += (pointer.y - pointer.sy) * Math.min(1, dt * 3);
-    spin += dt * .16 * s.idle;
+    spin += dt * .16 * s.idle * (1 - s.face);
 
-    uniforms.uTime.value = time;
-    uniforms.uNight.value = s.night;
-    uniforms.uSolid.value = s.solid;
-    uniforms.uOpacity.value = s.opacity;
-    uniforms.uDistort.value = s.distort + Math.abs(smoothVel) * .0009;
+    shared.uTime.value = time;
+    shared.uNight.value = s.night;
+    // The intro's dissolve and approach are separate keys, combined here.
+    const solid = Math.min(s.solid, s.intro);
+    const zoom = s.zoom * (.82 + .18 * s.introMove);
+    const twist = s.twist - 1.4 * (1 - s.introMove);
+    shared.uSolid.value = solid;
+    shared.uOpacity.value = s.opacity;
+    shared.uDistort.value = s.distort + Math.abs(smoothVel) * .0009;
     pointsUniforms.uOpacity.value = s.points * s.opacity;
     pointsUniforms.uScatter.value = s.scatter;
+    pointsUniforms.uGhost.value = s.ghost;
+    pointsUniforms.uChoose.value = s.choose;
     wireMat.opacity = s.wire * s.opacity * (.35 + .4 * s.night);
     wireMat.color.copy(ink).lerp(rim, s.night);
-    shadowUniforms.uOpacity.value = s.shadow * (1 - s.night) * s.solid * s.opacity;
+    shadowUniforms.uOpacity.value = s.shadow * (1 - s.night) * solid * s.opacity;
+    haloUniforms.uOpacity.value = s.night * solid * s.opacity * (1 - s.face);
 
     const visible = s.opacity > .002;
-    meshes.forEach(m => { m.visible = visible && s.solid > .002; });
+    meshes.forEach(m => { m.visible = visible && solid > .002; });
     points.visible = visible && s.points > .002;
     wire.visible = visible && s.wire > .002;
     shadow.visible = shadowUniforms.uOpacity.value > .002;
+    halo.visible = haloUniforms.uOpacity.value > .002;
 
-    rig.position.set((s.x - .5) * visW, (.5 - s.y) * visH, 0);
-    rig.scale.setScalar((s.size * s.zoom * visH) / EXTENT);
-    form.rotation.set(pointer.sy * .22 + smoothVel * .004,spin + s.rot + s.twist + pointer.sx * .35, 0);
+    const scale = (s.size * zoom * visH) / EXTENT;
+    rig.scale.setScalar(scale);
+    pointsUniforms.uRigScale.value = scale;
+    euler.set(pointer.sy * .22 + smoothVel * .004, spin + s.rot + twist + pointer.sx * .35, 0);
+    qFree.setFromEuler(euler);
+    form.quaternion.slerpQuaternions(qFree, qFace, s.face);
+    // While facing, keep the aim point (inside ring A's hole) on the requested centre.
+    rig.position.set((s.x - .5) * visW - AIM[0] * scale * s.face, (.5 - s.y) * visH - AIM[1] * scale * s.face, 0);
 
-    if (visible) renderer.render(scene, camera);
-    else renderer.clear();
+    const pxPerUnit = h / visH;
+    metrics.cx = (rig.position.x / visW + .5) * w;
+    metrics.cy = (.5 - rig.position.y / visH) * h;
+    metrics.diameter = s.size * zoom * h;
+    metrics.hole = (R - TUBE) * scale * pxPerUnit;
+
+    if (!visible) { renderer.clear(); if (frontDrawn) { front.clearRect(0, 0, frontCanvas.width, frontCanvas.height); frontDrawn = false; } return; }
+
+    // Threading pass: only the nearest parts of the solid, copied above the headline.
+    if (front && s.front > .002 && solid > .002) {
+      shared.uFront.value = 1;
+      shared.uFrontZ.value = scale * .55;
+      points.visible = wire.visible = shadow.visible = halo.visible = false;
+      renderer.render(scene, camera);
+      front.clearRect(0, 0, frontCanvas.width, frontCanvas.height);
+      front.globalAlpha = s.front;
+      front.drawImage(canvas, 0, 0);
+      frontDrawn = true;
+      shared.uFront.value = 0;
+      points.visible = s.points > .002; wire.visible = s.wire > .002;
+      shadow.visible = shadowUniforms.uOpacity.value > .002; halo.visible = haloUniforms.uOpacity.value > .002;
+    } else if (frontDrawn) {
+      front.clearRect(0, 0, frontCanvas.width, frontCanvas.height);
+      frontDrawn = false;
+    }
+    renderer.render(scene, camera);
   }
 
   function setVelocity(v) { velocity = v; }
@@ -296,14 +381,16 @@ export function createStage(canvas, { touch = false, onContextLost, state = { ..
   function dispose() {
     window.removeEventListener('pointermove', onPointer);
     canvas.removeEventListener('webglcontextlost', lost);
-    torusGeo.dispose(); solidMat.dispose();
+    if (frontDrawn) front.clearRect(0, 0, frontCanvas.width, frontCanvas.height);
+    torusGeo.dispose(); meshes.forEach(m => m.material.dispose());
     points.geometry.dispose(); points.material.dispose();
     wire.geometry.dispose(); wireMat.dispose();
     shadow.geometry.dispose(); shadow.material.dispose();
+    halo.geometry.dispose(); halo.material.dispose();
     renderer.dispose();
   }
 
-  return { state, render, resize, setVelocity, dispose };
+  return { state, metrics, render, resize, setVelocity, dispose };
 }
 
 export function webglAvailable() {

@@ -103,6 +103,13 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
 .take-name{margin:0;font-family:var(--display);font-weight:900;font-variation-settings:'wdth' 62;text-transform:uppercase;letter-spacing:var(--track-display);line-height:.82;font-size:clamp(76px,14vw,250px)}
 .take-copy{margin:clamp(22px,3.5svh,36px) 0 0;max-width:32ch;font-size:clamp(18px,1.55vw,25px);line-height:1.42}
 .process-hud{display:none}
+.take-meta{list-style:none;margin:clamp(24px,4svh,40px) 0 0;padding:0;max-width:34ch;border-top:1px solid var(--line-light);font-size:14px}
+.take-meta li{display:grid;grid-template-columns:2ch 1fr auto;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--line-light);color:#a9a59c}
+.take-meta li span{font-family:var(--display);font-weight:900;color:#e7e3da}
+.take-meta em{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.take-meta li:not(.is-chosen){text-decoration:line-through;text-decoration-color:rgba(243,240,233,.35)}
+.take-meta .is-chosen{color:var(--paper)}
+.take-meta .is-chosen span,.take-meta .is-chosen em{color:var(--rim)}
 
 /* Craft: the kinetic line. Its width axis answers scroll velocity (set as --w by script). */
 .kinetic{--w:100;margin:0 calc(-1 * var(--gutter)) clamp(56px,9svh,110px);overflow:hidden;pointer-events:none}
@@ -164,9 +171,44 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--signal);outline-off
    Without .motion-ready everything above is the complete static composition with the SVG poster. */
 .backdrop,.stage,.grain{position:fixed;inset:0;pointer-events:none}
 .backdrop{z-index:0;background:var(--paper);display:none}
-.backdrop-night{--iris:0px;--ix:70%;--iy:50%;position:absolute;inset:0;background:radial-gradient(ellipse 55% 60% at 70% 50%,#1a1d1f,transparent 72%),var(--cinema);clip-path:circle(var(--iris) at var(--ix) var(--iy));visibility:hidden}
+/* Night is graded like a frame: a lifted centre, a cool-black vignette at the edges. */
+.backdrop-night{--iris:0px;--ix:70%;--iy:50%;position:absolute;inset:0;background:radial-gradient(ellipse 85% 85% at 50% 50%,transparent 55%,rgba(2,4,6,.7)),radial-gradient(ellipse 55% 60% at 70% 50%,#1b1e20,transparent 72%),var(--cinema);clip-path:circle(var(--iris) at var(--ix) var(--iy));visibility:hidden}
+/* The paper world seen through the ring during the portal. */
+.backdrop-day{--day:0px;--dx:50%;--dy:50%;position:absolute;inset:0;background:var(--paper);clip-path:circle(var(--day) at var(--dx) var(--dy));visibility:hidden}
 .stage{z-index:1;width:100%;height:100%;display:none}
-.grain{z-index:60;display:none;opacity:.07;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.stage-front{position:fixed;inset:0;z-index:3;width:100%;height:100%;pointer-events:none;display:none}
+.stage-live .stage-front{display:block}
+@media(pointer:coarse){.stage-front{display:none!important}}
+
+/* Annotations on the object (StageOverlay.jsx). 1 unit = var(--u) px; strokes and type stay a constant screen size. */
+.overlay{--u:1;--anno:0;--frames:0;--dirs:0;--choose:0;position:fixed;left:0;top:0;z-index:1;pointer-events:none;visibility:hidden;display:none;color:var(--rim)}
+.stage-live .overlay{display:block}
+.overlay svg{display:block;width:100%;height:100%;overflow:visible}
+.overlay :is(.ov-draw,.ov-strike){fill:none;stroke:currentColor;stroke-width:calc(1px / var(--u));stroke-dasharray:1}
+.ov-label{fill:#e7e3da;font-family:var(--mono);font-size:calc(10.5px / var(--u));letter-spacing:calc(1px / var(--u));text-transform:uppercase}
+.ov-blueprint .ov-draw{stroke-dashoffset:calc(1 - clamp(0, var(--anno) * 6 - var(--i), 1))}
+.ov-blueprint .ov-label{opacity:clamp(0, var(--anno) * 3 - 1.6, 1)}
+.ov-frame .ov-draw{stroke-dashoffset:calc(1 - clamp(0, var(--frames) * 4.4 - var(--i), 1));opacity:.75}
+.ov-frame .ov-label{opacity:clamp(0, var(--frames) * 4.4 - var(--i) - .4, 1)}
+.ov-directions{opacity:var(--dirs)}
+.ov-dir-id{font-family:var(--display);font-weight:900;font-size:calc(22px / var(--u));letter-spacing:0;fill:var(--paper)}
+.ov-dir:not(.ov-dir--chosen){opacity:calc(1 - var(--choose) * .55)}
+.ov-dir--chosen .ov-dir-id{fill:var(--rim)}
+.ov-strike{stroke-dashoffset:calc(1 - var(--choose));stroke-width:calc(1.5px / var(--u))}
+
+/* Viewfinder cursor: follows the pointer; the native cursor is kept. */
+.cursor{position:fixed;left:0;top:0;z-index:70;width:0;height:0;pointer-events:none;display:none;color:#fff;mix-blend-mode:difference}
+.has-cursor .cursor{display:block}
+.cursor-frame{position:absolute;left:-17px;top:-17px;width:34px;height:34px;opacity:0;transform:scale(.6);transition:opacity .3s,transform .45s var(--ease-out)}
+.cursor--on .cursor-frame{opacity:.9;transform:scale(1)}
+.cursor--target .cursor-frame{transform:scale(1.7)}
+.cursor-frame i{position:absolute;width:8px;height:8px;border:0 solid currentColor}
+.cursor-frame i:nth-child(1){top:0;left:0;border-width:1.5px 0 0 1.5px}.cursor-frame i:nth-child(2){top:0;right:0;border-width:1.5px 1.5px 0 0}
+.cursor-frame i:nth-child(3){bottom:0;left:0;border-width:0 0 1.5px 1.5px}.cursor-frame i:nth-child(4){bottom:0;right:0;border-width:0 1.5px 1.5px 0}
+
+/* Film grain, re-seeded a few times a second (stops with Motion off and reduced motion). */
+.grain{z-index:60;display:none;opacity:.07;mix-blend-mode:multiply;inset:-80px;animation:grain .7s steps(5) infinite;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.4 -.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-31px,17px)}40%{transform:translate(23px,-41px)}60%{transform:translate(-13px,37px)}80%{transform:translate(41px,9px)}100%{transform:translate(0,0)}}
 .motion-ready .backdrop,.motion-ready .grain{display:block}
 .stage-live .stage{display:block}
 .motion-ready #content{position:relative;z-index:2}
@@ -199,6 +241,8 @@ html.lenis{scroll-behavior:auto}
 @media(max-width:899px){
   /* Mobile take: the object holds the top of the frame, the copy plays underneath. */
   .motion-ready .take:not(.take--head){min-height:100svh;padding-top:50svh}
+  /* Room to read the last take before the portal begins. */
+  .motion-ready .take:last-child{padding-bottom:60svh}
 }
 
 /* Boot: hide only what the intro is about to reveal. The script decides during hydration
