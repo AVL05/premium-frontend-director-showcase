@@ -7,7 +7,8 @@ const display = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const text = DM_Sans({ subsets: ['latin'], variable: '--font-text', display: 'swap' });
 
 export const metadata = {
-  metadataBase: new URL('https://github.com/AVL05/premium-frontend-director-showcase'),
+  metadataBase: new URL('https://the-art-of-direction.netlify.app'),
+  alternates: { canonical: '/' },
   title: 'The Art of Direction — Premium Frontend Director',
   description: 'An open-source agent skill that teaches coding agents to art-direct a frontend, build it, and prove it in a real browser against 11 quality gates.',
   openGraph: {
